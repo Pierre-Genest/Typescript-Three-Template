@@ -6,6 +6,14 @@ import { GeometryTypes, Vector3D } from "../ifaces/geometry.interface"
 /*        LOADER FUNCTIONS       */
 /*********************************/
 
+/**
+ * 
+ * @param name The name with wich you want to store the object in the scene
+ * @param loader The loader needed to load your bject
+ * @param path The path to get your object
+ * @param scene The scene in wich you want to add the object
+ * 
+ */
 export function loadObject (name: string, loader: FBXLoader | GLTFLoader | OBJLoader, path: string, scene: Scene) {
   const parse = path.split('.')
   const extension = parse[parse.length-1]
@@ -47,9 +55,9 @@ export function loadObject (name: string, loader: FBXLoader | GLTFLoader | OBJLo
 
 /**
  * 
- * @param geometry formes geometriques comportant tout les différents formes 3D de THREEJS
- * @param color choix de la couleur
- * @returns Mesh: élément ajoutable à la scène
+ * @param geometry The Three geometry you want to create
+ * @param color The color in hex, exemple: 0xffffff (white color)
+ * @returns A Mesh
  */
 export function createSurface (geometry: GeometryTypes, color: ColorRepresentation): Mesh {
   const material = new MeshBasicMaterial( {color: color} ) // SETTING COLOR IN HEX #RGB
@@ -60,9 +68,9 @@ export function createSurface (geometry: GeometryTypes, color: ColorRepresentati
 
 /**
  * 
- * @param path chemin de la texture
- * @param geometry type de forme géometrique
- * @returns Mesh: élément ajoutable à la scène
+ * @param geometry The Three geometry you want to create
+ * @param path The path of the texture wanted
+ * @returns A Promise of the Mesh
  */
 export function createSurfaceWithTexture (geometry: GeometryTypes, path: string): Promise<Mesh> {
   return loadTexture(path)
@@ -79,15 +87,22 @@ export function createSurfaceWithTexture (geometry: GeometryTypes, path: string)
   
 /**
  * 
- * @param element définir le mesh/object 3D
- * @param pos définir les coordonnées de l'élément
+ * @param element the mesh you are going to modify
+ * @param pos the position you want your element on
+ * Modify the position of the mesh with the position given
  */
-export function setPosition (element: Mesh, pos: Vector3D) {
+export function setMeshPosition (element: Mesh, pos: Vector3D) {
   element.position.x = pos.x
   element.position.y = pos.y
   element.position.z = pos.z
 }
 
+/**
+ * 
+ * @param path the path to the image you want as a texture
+ * @param onProgress (not necessary) a function that will be called to get the progress event 
+ * @returns A Promise of the Texture
+ */
 export function loadTexture(path: string, onProgress?: (event: ProgressEvent) => void): Promise<Texture> {
   return new Promise((resolve, reject) => {
     new TextureLoader().load(path,
@@ -98,9 +113,15 @@ export function loadTexture(path: string, onProgress?: (event: ProgressEvent) =>
 }
 
 /********************************************/
-/*             CAMERA FUNCTIONS             */
+/*              MESH FUNCTIONS              */
 /********************************************/
 
+/**
+ * 
+ * @param element the mesh you are going to modify
+ * @param axes the axe on wich you want your element to rotate
+ * Modify the rotation of the mesh with the axes given
+ */
 export function rotateMesh(element: Mesh, axes: Vector3D) {
   if(element) {
     element.rotation.x += axes.x
@@ -113,9 +134,16 @@ export function rotateMesh(element: Mesh, axes: Vector3D) {
 /*             CAMERA FUNCTIONS             */
 /********************************************/
 
-export function cameraNewPosition (camera: PerspectiveCamera, newPosition: Vector3D) {
-  camera.position.setX(newPosition.x)
-  camera.position.setY(newPosition.y)
-  camera.position.setZ(newPosition.z)
-  camera.lookAt(0,0,0)
+/**
+ * 
+ * @param camera the camera that is going to be updated
+ * @param position the position you are going to move to
+ * @param lookAt (not necessary) the position that needs to be lookAt
+ * Update the camera position
+ */
+export function setCameraPosition (camera: PerspectiveCamera, position: Vector3D, lookAt?: Vector3D) {
+  camera.position.setX(position.x)
+  camera.position.setY(position.y)
+  camera.position.setZ(position.z)
+  if (lookAt) camera.lookAt(lookAt.x,lookAt.y,lookAt.z)
 }

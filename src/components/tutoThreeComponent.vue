@@ -9,7 +9,7 @@
 import { Ref, onMounted, reactive, ref, watch } from 'vue'
 import { Scene, PerspectiveCamera, WebGLRenderer, BoxGeometry, Mesh, AxesHelper, SphereGeometry, Clock } from 'three'
 import { setupCamera, cameraUpdate, setupLight } from '../scripts/tutoThreeComponent' 
-import { cameraNewPosition, createSurfaceWithTexture, rotateMesh, setPosition } from '../scripts/basicThree'
+import { createSurfaceWithTexture, rotateMesh, setCameraPosition, setMeshPosition,  } from '../scripts/basicThree'
 import { Size2D, Vector3D } from '../ifaces/geometry.interface'
 
 /********************************************/
@@ -53,37 +53,37 @@ function handleCamera (deltaTime: number) {
     y: cameraOptions.to.y - cameraOptions.position.y,
     z: cameraOptions.to.z - cameraOptions.position.z
   }
-  const vitesse : Vector3D = {
-    x: (distance.x/cameraOptions.time)*deltaTime,
-    y: (distance.y/cameraOptions.time)*deltaTime,
-    z: (distance.z/cameraOptions.time)*deltaTime
+  const speed: Vector3D = {
+    x: (distance.x / cameraOptions.time) * deltaTime,
+    y: (distance.y / cameraOptions.time) * deltaTime,
+    z: (distance.z / cameraOptions.time) * deltaTime
   }
 
   if(cameraOptions.time > 0) {
     cameraOptions.time = cameraOptions.time - deltaTime
     cameraOptions.position = {
-      x: cameraOptions.position.x + vitesse.x, 
-      y: cameraOptions.position.y + vitesse.y, 
-      z: cameraOptions.position.z + vitesse.z
+      x: cameraOptions.position.x + speed.x, 
+      y: cameraOptions.position.y + speed.y, 
+      z: cameraOptions.position.z + speed.z
     }
-    cameraNewPosition(camera, cameraOptions.position)
+    setCameraPosition(camera, cameraOptions.position)
   } else if (cameraOptions.position.x !== cameraOptions.to.x 
     || cameraOptions.position.y !== cameraOptions.to.y 
-    || cameraOptions.position.z !== cameraOptions.to.z ) cameraNewPosition(camera, cameraOptions.to)
+    || cameraOptions.position.z !== cameraOptions.to.z ) setCameraPosition(camera, cameraOptions.to)
 }
-
-function render () { renderer.render( scene, camera ) }
 
 function animate() {
   const deltaTime = clock.getDelta()
 
-  //dans les parametres de la fonction donner le temps actuel pour arriver au point B. Le temps qu'il faut moins deltaTime avec la nouvelle position à chaque fois. 
-	requestAnimationFrame( animate )
+  requestAnimationFrame( animate )
   if (environnement["sphere"]) rotateMesh(environnement["sphere"], {x: 0.01, y: 0.01, z:0.0})
   if (environnement["surface"]) rotateMesh(environnement["surface"],{x: 0.00, y: 0.01, z:0.0})
   handleCamera(deltaTime)
-	renderer.render( scene, camera )
+	render()
 }
+
+function render () { renderer.render( scene, camera ) }
+
 
 /********************************************/
 /*       FUNCTION CALL IN SETUP             */
@@ -101,13 +101,13 @@ createSurfaceWithTexture(geometry, "/textures/Obama/Obama.jpg")
 
 createSurfaceWithTexture(geometry2, "/textures/Trump/Trump.jpg")
   .then((mesh) => {
-    setPosition(mesh, {x:1, y:-2, z:1})
+    setMeshPosition(mesh, {x:1, y:-2, z:1})
     environnement["surface"] = mesh
   })
 
 setupCamera(camera)
 setupLight(scene)
-cameraNewPosition(camera, {x:10, y:10, z:9})
+setCameraPosition(camera, {x:10, y:10, z:9})
 
 scene.add(axesHelper)
 
