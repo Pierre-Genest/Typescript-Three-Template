@@ -1,0 +1,11 @@
+.flex {
+  display: flex;
+
+  &-left { justify-items: flex-start; }
+  &-center { justify-items: center; }
+  &-right { justify-items: flex-end; }
+
+  &-start { align-items: flex-start; }
+  &-align { align-items: center; }
+  &-end { align-items: flex-end; }
+}

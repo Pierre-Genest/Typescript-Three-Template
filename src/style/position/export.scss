@@ -1,0 +1,17 @@
+.relative { position: relative; }
+
+.absolute { 
+  position: absolute;
+
+  &-top { top: 0px; }
+  &-left { left: 0px; }
+  &-right { right: 0px; }
+  &-bottom { bottom: 0px; }
+}
+
+.z-index {
+  z-index: 1;
+
+  &-back { z-index: 0; }
+  &-front { z-index: 2; }
+}
