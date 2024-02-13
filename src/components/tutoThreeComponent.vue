@@ -6,11 +6,12 @@
 /********************************************/
 /*              IMPORTS                     */
 /********************************************/
-import { Ref, onMounted, reactive, ref, watch } from 'vue'
+import { Ref, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { Scene, PerspectiveCamera, WebGLRenderer, BoxGeometry, Mesh, AxesHelper, SphereGeometry, Clock } from 'three'
 import { setupCamera, cameraUpdate, setupLight } from '../scripts/tutoThreeComponent' 
 import { createSurfaceWithTexture, rotateMesh, setCameraPosition, setMeshPosition,  } from '../scripts/basicThree'
 import { Size2D, Vector3D } from '../ifaces/geometry.interface'
+import { CameraOptions } from '../ifaces/basic.interface'
 
 /********************************************/
 /*           TYPES ASSIGNATION              */
@@ -22,21 +23,23 @@ type MyProps = { windowSize: Size2D }
 /********************************************/
 const props = defineProps < MyProps >()
 
+const interval: Ref<undefined | ReturnType<typeof setInterval>> = ref()
 const fov = ref(75)
 const near = ref(0.1)
 const far = ref(1000)
 const environnement = reactive<Record<string, Mesh>>({})
-const cameraOptions = reactive({
+const cameraOptions: CameraOptions = reactive({
   position: { x: 0, y: 0, z: 0 },
-  time: 12,
-  to: { x: 10, y: 10, z: 10 }
+  time: 4,
+  to: { x: 2, y: 0, z: 10 },
+  lookAt: {x: 0, y: 0, z: 0}
 })
 
 const sceneParent: Ref<HTMLElement | undefined> = ref()
 
-const axesHelper = new AxesHelper(1)
-const geometry = new SphereGeometry( 1, 10, 10 ); 
-const geometry2 = new BoxGeometry(10, 3, 10)
+const axesHelper = new AxesHelper(10)
+const sphere = new SphereGeometry( 1, 100, 100 ); 
+const surface = new BoxGeometry(10, 1, 10)
 
 const scene: Scene = new Scene()
 const clock: Clock = new Clock()
@@ -66,18 +69,18 @@ function handleCamera (deltaTime: number) {
       y: cameraOptions.position.y + speed.y, 
       z: cameraOptions.position.z + speed.z
     }
-    setCameraPosition(camera, cameraOptions.position)
+    setCameraPosition(camera, cameraOptions.position, cameraOptions.lookAt)
   } else if (cameraOptions.position.x !== cameraOptions.to.x 
     || cameraOptions.position.y !== cameraOptions.to.y 
-    || cameraOptions.position.z !== cameraOptions.to.z ) setCameraPosition(camera, cameraOptions.to)
+    || cameraOptions.position.z !== cameraOptions.to.z ) setCameraPosition(camera, cameraOptions.to, cameraOptions.lookAt)
 }
 
 function animate() {
   const deltaTime = clock.getDelta()
 
   requestAnimationFrame( animate )
-  if (environnement["sphere"]) rotateMesh(environnement["sphere"], {x: 0.01, y: 0.01, z:0.0})
-  if (environnement["surface"]) rotateMesh(environnement["surface"],{x: 0.00, y: 0.01, z:0.0})
+  if (environnement["sphere"]) rotateMesh(environnement["sphere"], {x: 0, y: 0.01, z:0.0})
+  //if (environnement["surface"]) rotateMesh(environnement["surface"],{x: 0.00, y: 0.01, z:0.0})
   handleCamera(deltaTime)
 	render()
 }
@@ -94,22 +97,21 @@ function render () { renderer.render( scene, camera ) }
 
 renderer.setSize(props.windowSize.width, props.windowSize.height)
 
-createSurfaceWithTexture(geometry, "/textures/Obama/Obama.jpg")
+createSurfaceWithTexture(sphere, "/textures/blue.jpeg", 0.8)
   .then((mesh) => {
+    setMeshPosition(mesh, { x: 0, y: 1.5, z: 0 })
     environnement["sphere"] = mesh
   })
 
-createSurfaceWithTexture(geometry2, "/textures/Trump/Trump.jpg")
+createSurfaceWithTexture(surface, "/textures/marbre.jpeg")
   .then((mesh) => {
-    setMeshPosition(mesh, {x:1, y:-2, z:1})
+    setMeshPosition(mesh, { x: 0, y: 0, z: 0 })
     environnement["surface"] = mesh
   })
 
 setupCamera(camera)
 setupLight(scene)
 setCameraPosition(camera, {x:10, y:10, z:9})
-
-scene.add(axesHelper)
 
 /********************************************/
 /*     FUNCTION CALL IN VUE CYCLE LIFE      */
@@ -124,6 +126,7 @@ watch(props, (newProps: MyProps) => {
 
 watch(environnement, (newEnvironment: Record<string, Mesh>) => {
   scene.clear()
+  scene.add(axesHelper)
   for (let key in newEnvironment) scene.add(newEnvironment[key].clone())
   render()
 })
@@ -132,7 +135,21 @@ onMounted(() => { // function called after every tags are mounted in the file
   if (sceneParent.value) {
     sceneParent.value.appendChild(renderer.domElement)
     animate()
+
+    // TEST
+    interval.value = setInterval(() => {
+      cameraOptions.time =  4
+      cameraOptions.to = {
+        x: Math.floor(Math.random() * 10),
+        y: Math.floor(Math.random() * 10),
+        z: Math.floor(Math.random() * 10),
+      }
+    }, 4000)
     render()
   }
+})
+
+onUnmounted(() => {
+  clearInterval(interval.value)
 })
 </script>

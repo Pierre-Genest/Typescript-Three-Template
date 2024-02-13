@@ -31,7 +31,7 @@ export function loadObject (name: string, loader: FBXLoader | GLTFLoader | OBJLo
       case 'glb':
       case 'gltf': {
         const loadDraco : DRACOLoader = new DRACOLoader();
-        loadDraco.setDecoderPath( 'https://threejs.org/examples/jsm/libs/draco/' );
+        loadDraco.setDecoderPath('https://threejs.org/examples/jsm/libs/draco/');
         (loader as GLTFLoader).setDRACOLoader( loadDraco );
   
         (loader as GLTFLoader).load(path, (gltf) => {
@@ -46,55 +46,8 @@ export function loadObject (name: string, loader: FBXLoader | GLTFLoader | OBJLo
     }
   } catch (err) {
     console.log(err)
+    throw err
   }
-}
-  
-/*********************************/
-/*        CREATE FUNCTIONS       */ 
-/*********************************/
-
-/**
- * 
- * @param geometry The Three geometry you want to create
- * @param color The color in hex, exemple: 0xffffff (white color)
- * @returns A Mesh
- */
-export function createSurface (geometry: GeometryTypes, color: ColorRepresentation): Mesh {
-  const material = new MeshBasicMaterial( {color: color} ) // SETTING COLOR IN HEX #RGB
-  const mesh = new Mesh(geometry, material);
-
-  return mesh
-}
-
-/**
- * 
- * @param geometry The Three geometry you want to create
- * @param path The path of the texture wanted
- * @returns A Promise of the Mesh
- */
-export function createSurfaceWithTexture (geometry: GeometryTypes, path: string): Promise<Mesh> {
-  return loadTexture(path)
-    .then((textureSurface) => {
-      const material = new MeshBasicMaterial({map: textureSurface})
-      const mesh = new Mesh(geometry, material)
-
-      return mesh
-    })
-    .catch((message: string) => {
-        throw message
-    }) 
-}
-  
-/**
- * 
- * @param element the mesh you are going to modify
- * @param pos the position you want your element on
- * Modify the position of the mesh with the position given
- */
-export function setMeshPosition (element: Mesh, pos: Vector3D) {
-  element.position.x = pos.x
-  element.position.y = pos.y
-  element.position.z = pos.z
 }
 
 /**
@@ -115,6 +68,60 @@ export function loadTexture(path: string, onProgress?: (event: ProgressEvent) =>
 /********************************************/
 /*              MESH FUNCTIONS              */
 /********************************************/
+
+/**
+ * 
+ * @param geometry The Three geometry you want to create
+ * @param color The color in hex, exemple: 0xffffff (white color)
+ * @param opacity (not necessary) The opacity between 1 and 0
+ * @returns A Mesh
+ */
+export function createSurface (geometry: GeometryTypes, color: ColorRepresentation, opacity?: number): Mesh {
+  const material = new MeshBasicMaterial( {color: color} ) // SETTING COLOR IN HEX #RGB
+  if (opacity) {
+    material.transparent = true
+    material.opacity = opacity
+  }
+  const mesh = new Mesh(geometry, material);
+
+  return mesh
+}
+
+/**
+ * 
+ * @param geometry The Three geometry you want to create
+ * @param path The path of the texture wanted
+ * @param opacity (not necessary) The opacity between 1 and 0
+ * @returns A Promise of the Mesh
+ */
+export function createSurfaceWithTexture (geometry: GeometryTypes, path: string, opacity?: number): Promise<Mesh> {
+  return loadTexture(path)
+    .then((textureSurface) => {
+      const material = new MeshBasicMaterial({map: textureSurface})
+      if (opacity) {
+        material.transparent = true
+        material.opacity = opacity
+      }
+      const mesh = new Mesh(geometry, material)
+
+      return mesh
+    })
+    .catch((message: string) => {
+        throw message
+    }) 
+}
+
+/**
+ * 
+ * @param element the mesh you are going to modify
+ * @param pos the position you want your element on
+ * Modify the position of the mesh with the position given
+ */
+export function setMeshPosition (element: Mesh, pos: Vector3D) {
+  element.position.x = pos.x
+  element.position.y = pos.y
+  element.position.z = pos.z
+}
 
 /**
  * 
