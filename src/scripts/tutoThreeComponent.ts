@@ -20,7 +20,7 @@ export function setupLight (lights: LightInfo[], helpers?: boolean) {
   light.lookAt(0, 0, 0)
   lights.push({
     light: light,
-    helper: helpers ? new PointLightHelper(light) : undefined
+    helper: helpers ? new PointLightHelper(light, 1) : undefined
   })
 }
 

@@ -77,7 +77,7 @@ export function loadTexture(path: string, onProgress?: (event: ProgressEvent) =>
  * @returns A Mesh
  */
 export function createSurface (geometry: GeometryTypes, color: ColorRepresentation, opacity?: number): Mesh {
-  const material = new MeshBasicMaterial( {color: color} ) // SETTING COLOR IN HEX #RGB
+  const material = new MeshPhongMaterial( {color: color} ) // SETTING COLOR IN HEX #RGB
   if (opacity) {
     material.transparent = true
     material.opacity = opacity
@@ -97,7 +97,7 @@ export function createSurface (geometry: GeometryTypes, color: ColorRepresentati
 export function createSurfaceWithTexture (geometry: GeometryTypes, path: string, opacity?: number): Promise<Mesh> {
   return loadTexture(path)
     .then((textureSurface) => {
-      const material = new MeshBasicMaterial({map: textureSurface})
+      const material = new MeshPhongMaterial({map: textureSurface})
       if (opacity) {
         material.transparent = true
         material.opacity = opacity

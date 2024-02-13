@@ -6,9 +6,9 @@
 /********************************************/
 /*              IMPORTS                     */
 /********************************************/
-import { Ref, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
+import { Ref, onMounted, onUnmounted, reactive, ref, toRaw, watch } from 'vue'
 import { Scene, PerspectiveCamera, WebGLRenderer, BoxGeometry, Mesh, AxesHelper, SphereGeometry, Clock } from 'three'
-import { setupCamera, cameraUpdate } from '../scripts/tutoThreeComponent' 
+import { setupCamera, cameraUpdate, setupLight } from '../scripts/tutoThreeComponent' 
 import { createSurfaceWithTexture, rotateMesh, setCameraPosition, setMeshPosition,  } from '../scripts/basicThree'
 import { Size2D, Vector3D } from '../ifaces/geometry.interface'
 import { CameraOptions, LightInfo } from '../ifaces/basic.interface'
@@ -63,7 +63,7 @@ function displayEnvironments (environment: Record<string, Mesh>) {
 }
 
 function displayLights () {
-  for (let light of lights.value) {
+  for (let light of toRaw(lights.value)) {
     scene.add(light.light)
     if (light.helper) scene.add(light.helper)
   }
@@ -109,12 +109,11 @@ function render () { renderer.render( scene, camera.camera ) }
 
 function move (ev: KeyboardEvent) {
   if (environnement["sphere"])
-      setMeshPosition(environnement["sphere"], {
-        x: environnement["sphere"].position.x + (ev.key === 'q' ? 1 : ev.key === 'd' ? (-1) : 0 ), 
-        y: environnement["sphere"].position.y, 
-        z: environnement["sphere"].position.z + (ev.key === 'z' ? 1 : ev.key === 's' ? (-1) : 0 )
-      })
-
+    lights.value[0].light.position.set(
+      lights.value[0].light.position.x + (ev.key === 'q' ? 0.5 : ev.key === 'd' ? (-0.5) : 0 ), 
+      lights.value[0].light.position.y, 
+      lights.value[0].light.position.z + (ev.key === 'z' ? 0.5 : ev.key === 's' ? (-0.5) : 0 )
+    )
 }
 
 /********************************************/
@@ -140,7 +139,7 @@ createSurfaceWithTexture(surface, "/textures/marbre.jpeg")
 
 
 setupCamera(camera)
-//setupLight(lights.value, true)
+setupLight(lights.value, true)
 
 window.onkeydown = move
 
