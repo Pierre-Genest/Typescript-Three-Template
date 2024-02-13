@@ -1,4 +1,4 @@
-import { Scene, ColorRepresentation, Mesh, MeshBasicMaterial, TextureLoader, Texture, PerspectiveCamera } from "three"
+import { Scene, ColorRepresentation, Mesh, TextureLoader, Texture, PerspectiveCamera, MeshPhongMaterial, MeshBasicMaterial } from "three"
 import { FBXLoader, GLTFLoader, OBJLoader, DRACOLoader } from "three/examples/jsm/Addons.js"
 import { GeometryTypes, Vector3D } from "../ifaces/geometry.interface"
 

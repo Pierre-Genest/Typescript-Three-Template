@@ -8,10 +8,10 @@
 /********************************************/
 import { Ref, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { Scene, PerspectiveCamera, WebGLRenderer, BoxGeometry, Mesh, AxesHelper, SphereGeometry, Clock } from 'three'
-import { setupCamera, cameraUpdate, setupLight } from '../scripts/tutoThreeComponent' 
+import { setupCamera, cameraUpdate } from '../scripts/tutoThreeComponent' 
 import { createSurfaceWithTexture, rotateMesh, setCameraPosition, setMeshPosition,  } from '../scripts/basicThree'
 import { Size2D, Vector3D } from '../ifaces/geometry.interface'
-import { CameraOptions } from '../ifaces/basic.interface'
+import { CameraOptions, LightInfo } from '../ifaces/basic.interface'
 
 /********************************************/
 /*           TYPES ASSIGNATION              */
@@ -28,7 +28,8 @@ const fov = ref(75)
 const near = ref(0.1)
 const far = ref(1000)
 const environnement = reactive<Record<string, Mesh>>({})
-const cameraOptions: CameraOptions = reactive({
+const camera: CameraOptions = reactive({
+  camera: new PerspectiveCamera( fov.value, props.windowSize.width / props.windowSize.height, near.value, far.value ),
   position: { x: 0, y: 0, z: 0 },
   time: 4,
   to: { x: 2, y: 0, z: 10 },
@@ -36,57 +37,85 @@ const cameraOptions: CameraOptions = reactive({
 })
 
 const sceneParent: Ref<HTMLElement | undefined> = ref()
+const lights: Ref<LightInfo[]> = ref([])
+const axeHelper = new AxesHelper(10)
 
-const axesHelper = new AxesHelper(10)
 const sphere = new SphereGeometry( 1, 100, 100 ); 
 const surface = new BoxGeometry(10, 1, 10)
 
 const scene: Scene = new Scene()
 const clock: Clock = new Clock()
 const renderer: WebGLRenderer = new WebGLRenderer()
-const camera: PerspectiveCamera = new PerspectiveCamera( fov.value, props.windowSize.width / props.windowSize.height, near.value, far.value )
 
 /********************************************/
 /*             FUNCTIONNALITIES             */
 /********************************************/
 
+function displayAll () {
+  scene.add(axeHelper)
+  displayEnvironments(environnement)
+  displayLights()
+  renderer.info.reset(); 
+}
+
+function displayEnvironments (environment: Record<string, Mesh>) {
+  for (let key in environment) scene.add(environment[key].clone())
+}
+
+function displayLights () {
+  for (let light of lights.value) {
+    scene.add(light.light)
+    if (light.helper) scene.add(light.helper)
+  }
+}
+
 function handleCamera (deltaTime: number) {
   const distance: Vector3D = {
-    x: cameraOptions.to.x - cameraOptions.position.x,
-    y: cameraOptions.to.y - cameraOptions.position.y,
-    z: cameraOptions.to.z - cameraOptions.position.z
+    x: camera.to.x - camera.position.x,
+    y: camera.to.y - camera.position.y,
+    z: camera.to.z - camera.position.z
   }
   const speed: Vector3D = {
-    x: (distance.x / cameraOptions.time) * deltaTime,
-    y: (distance.y / cameraOptions.time) * deltaTime,
-    z: (distance.z / cameraOptions.time) * deltaTime
+    x: (distance.x / camera.time) * deltaTime,
+    y: (distance.y / camera.time) * deltaTime,
+    z: (distance.z / camera.time) * deltaTime
   }
 
-  if(cameraOptions.time > 0) {
-    cameraOptions.time = cameraOptions.time - deltaTime
-    cameraOptions.position = {
-      x: cameraOptions.position.x + speed.x, 
-      y: cameraOptions.position.y + speed.y, 
-      z: cameraOptions.position.z + speed.z
+  if(camera.time > 0) {
+    camera.time = camera.time - deltaTime
+    camera.position = {
+      x: camera.position.x + speed.x, 
+      y: camera.position.y + speed.y, 
+      z: camera.position.z + speed.z
     }
-    setCameraPosition(camera, cameraOptions.position, cameraOptions.lookAt)
-  } else if (cameraOptions.position.x !== cameraOptions.to.x 
-    || cameraOptions.position.y !== cameraOptions.to.y 
-    || cameraOptions.position.z !== cameraOptions.to.z ) setCameraPosition(camera, cameraOptions.to, cameraOptions.lookAt)
+    setCameraPosition(camera.camera, camera.position, camera.lookAt)
+  } else if (camera.position.x !== camera.to.x 
+    || camera.position.y !== camera.to.y 
+    || camera.position.z !== camera.to.z ) setCameraPosition(camera.camera, camera.to, camera.lookAt)
 }
 
 function animate() {
   const deltaTime = clock.getDelta()
 
   requestAnimationFrame( animate )
+  scene.clear()
   if (environnement["sphere"]) rotateMesh(environnement["sphere"], {x: 0, y: 0.01, z:0.0})
-  //if (environnement["surface"]) rotateMesh(environnement["surface"],{x: 0.00, y: 0.01, z:0.0})
   handleCamera(deltaTime)
+  displayAll()
 	render()
 }
 
-function render () { renderer.render( scene, camera ) }
+function render () { renderer.render( scene, camera.camera ) }
 
+function move (ev: KeyboardEvent) {
+  if (environnement["sphere"])
+      setMeshPosition(environnement["sphere"], {
+        x: environnement["sphere"].position.x + (ev.key === 'q' ? 1 : ev.key === 'd' ? (-1) : 0 ), 
+        y: environnement["sphere"].position.y, 
+        z: environnement["sphere"].position.z + (ev.key === 'z' ? 1 : ev.key === 's' ? (-1) : 0 )
+      })
+
+}
 
 /********************************************/
 /*       FUNCTION CALL IN SETUP             */
@@ -97,7 +126,7 @@ function render () { renderer.render( scene, camera ) }
 
 renderer.setSize(props.windowSize.width, props.windowSize.height)
 
-createSurfaceWithTexture(sphere, "/textures/blue.jpeg", 0.8)
+createSurfaceWithTexture(sphere, "/textures/blue.jpeg")
   .then((mesh) => {
     setMeshPosition(mesh, { x: 0, y: 1.5, z: 0 })
     environnement["sphere"] = mesh
@@ -109,9 +138,11 @@ createSurfaceWithTexture(surface, "/textures/marbre.jpeg")
     environnement["surface"] = mesh
   })
 
+
 setupCamera(camera)
-setupLight(scene)
-setCameraPosition(camera, {x:10, y:10, z:9})
+//setupLight(lights.value, true)
+
+window.onkeydown = move
 
 /********************************************/
 /*     FUNCTION CALL IN VUE CYCLE LIFE      */
@@ -119,16 +150,8 @@ setCameraPosition(camera, {x:10, y:10, z:9})
 
 watch(props, (newProps: MyProps) => { 
   const aspect = newProps.windowSize.width / newProps.windowSize.height
-  cameraUpdate(camera, fov.value, aspect, near.value, far.value)
+  cameraUpdate(camera.camera, fov.value, aspect, near.value, far.value)
   renderer.setSize(newProps.windowSize.width, newProps.windowSize.height)
-  render()
-})
-
-watch(environnement, (newEnvironment: Record<string, Mesh>) => {
-  scene.clear()
-  scene.add(axesHelper)
-  for (let key in newEnvironment) scene.add(newEnvironment[key].clone())
-  render()
 })
 
 onMounted(() => { // function called after every tags are mounted in the file
@@ -138,8 +161,8 @@ onMounted(() => { // function called after every tags are mounted in the file
 
     // TEST
     interval.value = setInterval(() => {
-      cameraOptions.time =  4
-      cameraOptions.to = {
+      camera.time =  4
+      camera.to = {
         x: Math.floor(Math.random() * 10),
         y: Math.floor(Math.random() * 10),
         z: Math.floor(Math.random() * 10),
