@@ -1,6 +1,7 @@
-import { Scene, ColorRepresentation, Mesh, TextureLoader, Texture, PerspectiveCamera, MeshPhongMaterial, MeshBasicMaterial } from "three"
+import { Scene, ColorRepresentation, Mesh, TextureLoader, Texture, PerspectiveCamera, MeshPhongMaterial, Light } from "three"
 import { FBXLoader, GLTFLoader, OBJLoader, DRACOLoader } from "three/examples/jsm/Addons.js"
 import { GeometryTypes, Vector3D } from "../ifaces/geometry.interface"
+import { CameraOptions, CreateSurfaceOptions, Lights, Material } from "../ifaces/basic.interface"
 
 /*********************************/
 /*        LOADER FUNCTIONS       */
@@ -72,43 +73,58 @@ export function loadTexture(path: string, onProgress?: (event: ProgressEvent) =>
 /**
  * 
  * @param geometry The Three geometry you want to create
- * @param color The color in hex, exemple: 0xffffff (white color)
- * @param opacity (not necessary) The opacity between 1 and 0
+ * @param color The color in hexadecimal
+ * @param position The position you want the mesh to be
+ * @param options (not necessary) The options you want on your mesh 
  * @returns A Mesh
  */
-export function createSurface (geometry: GeometryTypes, color: ColorRepresentation, opacity?: number): Mesh {
+export function createSurface (geometry: GeometryTypes, color: ColorRepresentation, position: Vector3D, options?: CreateSurfaceOptions): Mesh {
   const material = new MeshPhongMaterial( {color: color} ) // SETTING COLOR IN HEX #RGB
-  if (opacity) {
-    material.transparent = true
-    material.opacity = opacity
-  }
-  const mesh = new Mesh(geometry, material);
 
-  return mesh
+  return createMeshWithMaterial(geometry, material, position, options)
 }
 
 /**
  * 
  * @param geometry The Three geometry you want to create
  * @param path The path of the texture wanted
- * @param opacity (not necessary) The opacity between 1 and 0
+ * @param position The position you want the mesh to be
+ * @param options (not necessary) The options you want on your mesh 
  * @returns A Promise of the Mesh
  */
-export function createSurfaceWithTexture (geometry: GeometryTypes, path: string, opacity?: number): Promise<Mesh> {
+export function createSurfaceWithTexture (geometry: GeometryTypes, path: string,  position: Vector3D, options?: CreateSurfaceOptions): Promise<Mesh> {
   return loadTexture(path)
     .then((textureSurface) => {
       const material = new MeshPhongMaterial({map: textureSurface})
-      if (opacity) {
-        material.transparent = true
-        material.opacity = opacity
-      }
-      const mesh = new Mesh(geometry, material)
 
-      return mesh
+      return createMeshWithMaterial(geometry, material, position, options)
     })
     .catch((message: string) => {
         throw message
     }) 
+}
+
+function createMeshWithMaterial (geometry: GeometryTypes, material: Material, position: Vector3D, options?: CreateSurfaceOptions): Mesh {
+  if (options?.opacity) {
+    material.transparent = true
+    material.opacity = options.opacity
+  }
+
+  const mesh = new Mesh(geometry, material);
+
+  setMeshPosition(mesh, { x: position.x, y: position.y, z: position.z })
+
+  if (options) {
+    if (options.physic)
+      options.physic.position.set(position.x, position.y, position.z)
+    
+    if (options.shadow) {
+      if (options.shadow.cast) mesh.castShadow = true
+      if (options.shadow.receive) mesh.receiveShadow = true
+    }
+  }
+
+  return mesh
 }
 
 /**
@@ -143,14 +159,12 @@ export function rotateMesh(element: Mesh, axes: Vector3D) {
 
 /**
  * 
- * @param camera the camera that is going to be updated
+ * @param elem the camera that is going to be updated
  * @param position the position you are going to move to
  * @param lookAt (not necessary) the position that needs to be lookAt
  * Update the camera position
  */
-export function setCameraPosition (camera: PerspectiveCamera, position: Vector3D, lookAt?: Vector3D) {
-  camera.position.setX(position.x)
-  camera.position.setY(position.y)
-  camera.position.setZ(position.z)
-  if (lookAt) camera.lookAt(lookAt.x,lookAt.y,lookAt.z)
+export function setElemPosition (elem: PerspectiveCamera | Lights, position: Vector3D, lookAt?: Vector3D) {
+  elem.position.set(position.x, position.y, position.z)
+  if (lookAt) elem.lookAt(lookAt.x,lookAt.y,lookAt.z)
 }

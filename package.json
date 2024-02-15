@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "cannon-es": "^0.20.0",
     "three": "^0.160.1",
     "vue": "^3.4.15"
   },
