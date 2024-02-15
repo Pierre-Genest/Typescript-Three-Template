@@ -9,7 +9,7 @@
 import { Ref, onMounted, onUnmounted, reactive, ref, toRaw, watch } from 'vue'
 import { Scene, PerspectiveCamera, WebGLRenderer, BoxGeometry, AxesHelper, SphereGeometry, Clock } from 'three'
 import { Body, Sphere, Box, World, Vec3 } from 'cannon-es'
-import { setupCamera, cameraUpdate, setupLight, handleCamera, handleLights, handleElem } from '../scripts/tutoThreeComponent' 
+import { setupCamera, cameraUpdate, setupLight, handleElem } from '../scripts/tutoThreeComponent' 
 import { createSurfaceWithTexture, rotateMesh } from '../scripts/basicThree'
 import { Size2D } from '../ifaces/geometry.interface'
 import { CameraOptions, LightInfo, ObjInfo } from '../ifaces/basic.interface'
@@ -43,8 +43,8 @@ const sceneParent: Ref<HTMLElement | undefined> = ref()
 const lights: Ref<LightInfo[]> = ref([])
 const axeHelper = new AxesHelper(10)
 
-const sphere = new SphereGeometry( 1, 100, 100 );
-const sphereShape = new Sphere(1)
+const sphere = new BoxGeometry( 1, 1, 1 );
+const sphereShape = new Box(new Vec3(0.5, 0.5, 0.5))
 const sphereBody = new Body({ mass: 1 })
 
 const sphereTest = new SphereGeometry( 1, 100, 100 );
@@ -82,6 +82,12 @@ function triggerPhysics () {
         environment[key].physic.position.y,
         environment[key].physic.position.z,
       )
+      environment[key].mesh.quaternion.set(
+        environment[key].physic.quaternion.x,
+        environment[key].physic.quaternion.y,
+        environment[key].physic.quaternion.z,
+        environment[key].physic.quaternion.w
+     )
     }
   }
 }
@@ -107,7 +113,7 @@ function animate() {
   requestAnimationFrame( animate )
   world.step(deltaTime)
   scene.clear()
-  if (environment["sphere"]) rotateMesh(environment["sphere"].mesh, {x: 0, y: 0.01, z:0.0})
+  //if (environment["sphere"]) rotateMesh(environment["sphere"].mesh, {x: 0, y: 0.01, z:0.0})
   displayAll(deltaTime)
 	render()
 }
@@ -179,7 +185,7 @@ watch(props, (newProps: MyProps) => {
 
 onMounted(() => { // function called after every tags are mounted in the file
   if (sceneParent.value) {
-    sceneParent.value.appendChild(renderer.domElement)
+      sceneParent.value.appendChild(renderer.domElement)
     animate()
 
     // Exemple pour presen 

@@ -13,12 +13,15 @@ export type CreateSurfaceOptions = {
   shadow?: shadowOption
 }
 
-export type CameraOptions = {
-  elem: PerspectiveCamera
+export interface MovementOptions {
   position: Vector3D,
   time: number,
   to: Vector3D,
   lookAt?: Vector3D
+}
+
+export interface CameraOptions extends MovementOptions {
+  elem: PerspectiveCamera
 }
 
 export type ObjInfo = {
@@ -26,13 +29,9 @@ export type ObjInfo = {
   physic?: Body
 }
 
-export type LightInfo = {
+export interface LightInfo extends MovementOptions {
   elem: Lights,
   helper?: LightsHelper
-  position: Vector3D,
-  time: number,
-  to: Vector3D,
-  lookAt?: Vector3D
 }
 
 export type Lights = DirectionalLight | SpotLight | PointLight
