@@ -20,4 +20,4 @@ export type Size3D = {
 export type GeometryTypes = BoxGeometry | CapsuleGeometry | CircleGeometry | ConeGeometry |
  CylinderGeometry | DodecahedronGeometry | EdgesGeometry | ExtrudeGeometry |  IcosahedronGeometry |
  LatheGeometry | OctahedronGeometry | PlaneGeometry | PolyhedronGeometry | RingGeometry | ShapeGeometry | 
-  SphereGeometry | TetrahedronGeometry | TorusGeometry | TorusKnotGeometry | TubeGeometry | WireframeGeometry 
+ SphereGeometry | TetrahedronGeometry | TorusGeometry | TorusKnotGeometry | TubeGeometry | WireframeGeometry 

@@ -1,28 +1,33 @@
 
+
 <template>
-  <div v-if="windowSize.width !== 0 && windowSize.height !== 0" 
-    :style="`width: ${windowSize.width}px; height: ${windowSize.height}px`"  
-    class="relative no-overflow ">
-    <router-view v-if="mounted"/>
-    <div class="absolute absolute-top absolute-left z-index-front width-100 height-100 flex flex-end no-overflow">
-      <div class="width-100 height-100">
-        <div id="overlay-informations" class="height-80"/>
-        <div id="overlay-ctas" class="height-20 flex flex-align flex-column"/>
-      </div>
-    </div>
+  <div class="width-100 height-100">
+    <surveyThreeComponentVue v-if="windowSize.height !== 0 && windowSize.width !== 0" :window-size="windowSize"/>
   </div>
+
+  <Teleport to="#overlay-informations">
+  </Teleport>
+
+  <Teleport to="#overlay-ctas">
+  </Teleport>
 </template>
 
 <script setup lang="ts">
+import surveyThreeComponentVue from '../components/surveyThreeComponent.vue';
+
 /********************************************/
 /*              IMPORTS                     */
 /********************************************/
-import { onMounted, reactive, ref } from 'vue'
+import { reactive } from 'vue'
+
+/********************************************/
+/*           TYPES ASSIGNATION              */
+/********************************************/
+
 
 /********************************************/
 /*           VARIABLE ASSIGNATION           */
 /********************************************/
-const mounted = ref(false)
 const windowSize = reactive({ width: window.innerWidth, height: window.innerHeight })
 /********************************************/
 /*             FUNCTIONNALITIES             */
@@ -40,14 +45,9 @@ function resize () {
 /********************************************/
 
 resize()
-window.onresize = resize
+window.addEventListener("resize", (_) => {resize()});
 
 /********************************************/
 /*     FUNCTION CALL IN VUE CYCLE LIFE      */
 /********************************************/
-
-onMounted(() => {
-  mounted.value = true
-})
-
 </script>

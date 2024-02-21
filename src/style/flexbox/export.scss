@@ -1,6 +1,8 @@
 .flex {
   display: flex;
 
+  &-column { flex-direction: column; }
+
   &-left { justify-items: flex-start; }
   &-center { justify-items: center; }
   &-right { justify-items: flex-end; }

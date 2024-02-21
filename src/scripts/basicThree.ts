@@ -1,6 +1,7 @@
-import { Scene, ColorRepresentation, Mesh, TextureLoader, Texture, PerspectiveCamera, MeshPhongMaterial, MeshBasicMaterial } from "three"
+import { ColorRepresentation, Mesh, TextureLoader, Texture, PerspectiveCamera, MeshPhongMaterial, Group, Object3DEventMap } from "three"
 import { FBXLoader, GLTFLoader, OBJLoader, DRACOLoader } from "three/examples/jsm/Addons.js"
 import { GeometryTypes, Vector3D } from "../ifaces/geometry.interface"
+import { CameraOptions, CreateSurfaceOptions, LightInfo, Lights, Material } from "../ifaces/basic.interface"
 
 /*********************************/
 /*        LOADER FUNCTIONS       */
@@ -14,40 +15,60 @@ import { GeometryTypes, Vector3D } from "../ifaces/geometry.interface"
  * @param scene The scene in wich you want to add the object
  * 
  */
-export function loadObject (name: string, loader: FBXLoader | GLTFLoader | OBJLoader, path: string, scene: Scene) {
+export function loadObject (
+  name: string, 
+  loader: FBXLoader | GLTFLoader | OBJLoader, 
+  position: Vector3D, path: string, 
+  options?: CreateSurfaceOptions): Promise<Group<Object3DEventMap>> {
+
   const parse = path.split('.')
   const extension = parse[parse.length-1]
-  
-  try {
-    switch (extension) {
-      case 'obj': 
-      case 'fbx': {
-        (loader as FBXLoader | OBJLoader).load(path, (fbx) => {
-          fbx.name = name
-          scene.add(fbx)
-        })
-        break
+
+  return new Promise((resolve, reject) => {
+    try {
+      switch (extension) {
+        case 'obj': 
+        case 'fbx': {
+          (loader as FBXLoader | OBJLoader).load(path, (fbx) => {
+            fbx.name = name
+            fbx.position.set(position.x, position.y, position.z)
+            if (options) {
+              if (options.physic) {
+                options.physic.position.set(position.x, position.y, position.z)
+              }
+            }
+            resolve(fbx)
+          })
+          break
+        }
+        case 'glb':
+        case 'gltf': {
+          const loadDraco : DRACOLoader = new DRACOLoader();
+          loadDraco.setDecoderPath('https://threejs.org/examples/jsm/libs/draco/');
+          (loader as GLTFLoader).setDRACOLoader( loadDraco );
+    
+          (loader as GLTFLoader).load(path, (gltf) => {
+            gltf.scene.name = name
+            gltf.scene.position.set(position.x, position.y, position.z)
+            if (options) {
+              if (options.physic) {
+                options.physic.position.set(position.x, position.y, position.z)
+              }
+            }
+            resolve(gltf.scene)
+          })
+          break
+        } 
+        default : {
+          reject('loadObject ne gère pas cette extension connard !')
+        }
       }
-      case 'glb':
-      case 'gltf': {
-        const loadDraco : DRACOLoader = new DRACOLoader();
-        loadDraco.setDecoderPath('https://threejs.org/examples/jsm/libs/draco/');
-        (loader as GLTFLoader).setDRACOLoader( loadDraco );
-  
-        (loader as GLTFLoader).load(path, (gltf) => {
-          gltf.scene.name = name
-          scene.add(gltf.scene)
-        })
-        break
-      } 
-      default : {
-        console.log('loadObject ne gère pas cette extension connard !')
-      }
+    } catch (err) {
+      reject(err)
     }
-  } catch (err) {
-    console.log(err)
-    throw err
-  }
+  });
+  
+  
 }
 
 /**
@@ -72,43 +93,58 @@ export function loadTexture(path: string, onProgress?: (event: ProgressEvent) =>
 /**
  * 
  * @param geometry The Three geometry you want to create
- * @param color The color in hex, exemple: 0xffffff (white color)
- * @param opacity (not necessary) The opacity between 1 and 0
+ * @param color The color in hexadecimal
+ * @param position The position you want the mesh to be
+ * @param options (not necessary) The options you want on your mesh 
  * @returns A Mesh
  */
-export function createSurface (geometry: GeometryTypes, color: ColorRepresentation, opacity?: number): Mesh {
+export function createSurface (geometry: GeometryTypes, color: ColorRepresentation, position: Vector3D, options?: CreateSurfaceOptions): Mesh {
   const material = new MeshPhongMaterial( {color: color} ) // SETTING COLOR IN HEX #RGB
-  if (opacity) {
-    material.transparent = true
-    material.opacity = opacity
-  }
-  const mesh = new Mesh(geometry, material);
 
-  return mesh
+  return createMeshWithMaterial(geometry, material, position, options)
 }
 
 /**
  * 
  * @param geometry The Three geometry you want to create
  * @param path The path of the texture wanted
- * @param opacity (not necessary) The opacity between 1 and 0
+ * @param position The position you want the mesh to be
+ * @param options (not necessary) The options you want on your mesh 
  * @returns A Promise of the Mesh
  */
-export function createSurfaceWithTexture (geometry: GeometryTypes, path: string, opacity?: number): Promise<Mesh> {
+export function createSurfaceWithTexture (geometry: GeometryTypes, path: string,  position: Vector3D, options?: CreateSurfaceOptions): Promise<Mesh> {
   return loadTexture(path)
     .then((textureSurface) => {
       const material = new MeshPhongMaterial({map: textureSurface})
-      if (opacity) {
-        material.transparent = true
-        material.opacity = opacity
-      }
-      const mesh = new Mesh(geometry, material)
 
-      return mesh
+      return createMeshWithMaterial(geometry, material, position, options)
     })
     .catch((message: string) => {
         throw message
     }) 
+}
+
+function createMeshWithMaterial (geometry: GeometryTypes, material: Material, position: Vector3D, options?: CreateSurfaceOptions): Mesh {
+  if (options?.opacity) {
+    material.transparent = true
+    material.opacity = options.opacity
+  }
+
+  const mesh = new Mesh(geometry, material);
+
+  setMeshPosition(mesh, { x: position.x, y: position.y, z: position.z })
+
+  if (options) {
+    if (options.physic)
+      options.physic.position.set(position.x, position.y, position.z)
+    
+    if (options.shadow) {
+      if (options.shadow.cast) mesh.castShadow = true
+      if (options.shadow.receive) mesh.receiveShadow = true
+    }
+  }
+
+  return mesh
 }
 
 /**
@@ -129,7 +165,7 @@ export function setMeshPosition (element: Mesh, pos: Vector3D) {
  * @param axes the axe on wich you want your element to rotate
  * Modify the rotation of the mesh with the axes given
  */
-export function rotateMesh(element: Mesh, axes: Vector3D) {
+export function rotateMesh(element: Mesh | Group<Object3DEventMap>, axes: Vector3D) {
   if(element) {
     element.rotation.x += axes.x
     element.rotation.y += axes.y
@@ -143,14 +179,49 @@ export function rotateMesh(element: Mesh, axes: Vector3D) {
 
 /**
  * 
- * @param camera the camera that is going to be updated
+ * @param elem the camera that is going to be updated
  * @param position the position you are going to move to
  * @param lookAt (not necessary) the position that needs to be lookAt
  * Update the camera position
  */
-export function setCameraPosition (camera: PerspectiveCamera, position: Vector3D, lookAt?: Vector3D) {
-  camera.position.setX(position.x)
-  camera.position.setY(position.y)
-  camera.position.setZ(position.z)
-  if (lookAt) camera.lookAt(lookAt.x,lookAt.y,lookAt.z)
+export function setElemPosition (elem: PerspectiveCamera | Lights, position: Vector3D, lookAt?: Vector3D) {
+  elem.position.set(position.x, position.y, position.z)
+  if (lookAt) elem.lookAt(lookAt.x,lookAt.y,lookAt.z)
+}
+
+
+
+// TODO 
+
+export function cameraUpdate (camera: PerspectiveCamera, fov: number, aspect: number, near: number, far: number) {
+  camera.aspect = aspect
+  camera.fov = fov
+  camera.near = near
+  camera.far = far
+  camera.updateProjectionMatrix()
+}
+
+export function handleElem (deltaTime: number, elem: LightInfo | CameraOptions) {
+  const distance: Vector3D = {
+    x: elem.to.x - elem.position.x,
+    y: elem.to.y - elem.position.y,
+    z: elem.to.z - elem.position.z
+  }
+  const speed: Vector3D = {
+    x: (distance.x / elem.time) * deltaTime,
+    y: (distance.y / elem.time) * deltaTime,
+    z: (distance.z / elem.time) * deltaTime
+  }
+
+  if(elem.time > 0) {
+    elem.time = elem.time - deltaTime
+    elem.position = {
+      x: elem.position.x + speed.x, 
+      y: elem.position.y + speed.y, 
+      z: elem.position.z + speed.z
+    }
+    setElemPosition(elem.elem, elem.position, elem.lookAt)
+  } else if (elem.position.x !== elem.to.x 
+    || elem.position.y !== elem.to.y 
+    || elem.position.z !== elem.to.z ) setElemPosition(elem.elem, elem.position, elem.lookAt)
 }

@@ -6,14 +6,13 @@
 /********************************************/
 /*              IMPORTS                     */
 /********************************************/
-import { Ref, onMounted, onUnmounted, reactive, ref, toRaw, watch } from 'vue'
-import { Scene, PerspectiveCamera, WebGLRenderer, BoxGeometry, AxesHelper, SphereGeometry, Clock, PlaneGeometry } from 'three'
-import { Body, Sphere, Box, World, Vec3 } from 'cannon-es'
-import { setupCamera, setupLight } from '../scripts/tutoThreeComponent' 
-import { cameraUpdate, createSurface, createSurfaceWithTexture, handleElem, loadObject, rotateMesh } from '../scripts/basicThree'
+import { Ref, onMounted, reactive, ref, toRaw, watch } from 'vue'
+import { Scene, PerspectiveCamera, WebGLRenderer, BoxGeometry, AxesHelper, Clock } from 'three'
+import { Body, World } from 'cannon-es'
+import { setupCamera, setupLight } from '../scripts/surveyThreeComponent' 
+import { cameraUpdate, createSurfaceWithTexture, handleElem, rotateMesh } from '../scripts/basicThree'
 import { Size2D } from '../ifaces/geometry.interface'
 import { CameraOptions, LightInfo, ObjInfo } from '../ifaces/basic.interface'
-import { GLTFLoader } from 'three/examples/jsm/Addons.js'
 
 /********************************************/
 /*           TYPES ASSIGNATION              */
@@ -25,9 +24,6 @@ type MyProps = { windowSize: Size2D }
 /********************************************/
 const props = defineProps < MyProps >()
 const helpers = ref(true) // to trigger or untrigger all helpers
-
-const intervalCamera: Ref<undefined | ReturnType<typeof setInterval>> = ref()
-const intervalLight: Ref<undefined | ReturnType<typeof setInterval>> = ref()
 
 const fov = ref(75)
 const near = ref(0.1)
@@ -45,28 +41,8 @@ const sceneParent: Ref<HTMLElement | undefined> = ref()
 const lights: Ref<LightInfo[]> = ref([])
 const axeHelper = new AxesHelper(10)
 
-const loader = new GLTFLoader()
-const duckShape = new Sphere(0.7)
-const duckBody = new Body({ mass: 1 })
-
-const ghost = new BoxGeometry( 1, 1, 1 );
-
-const screen1 =  new PlaneGeometry( 3, 5 )
-const screen2 =  new PlaneGeometry( 3, 5 )
-const screen3 =  new PlaneGeometry( 3, 5 )
-
-const cube = new BoxGeometry( 1, 1, 1 );
-const cubeShape = new Box(new Vec3(0.5, 0.5, 0.5))
-const cubeBody = new Body({ mass: 1 })
-
-const sphereTest = new SphereGeometry( 1, 100, 100 );
-const sphereTestShape = new Sphere(1)
-const sphereTestBody = new Body({ mass: 1 })
-
 const surface = new BoxGeometry(10, 1, 10)
-const surfaceShape = new Box(new Vec3(5, 0.5, 5))
 const surfaceBody = new Body({ mass: 0 })
-
 
 const scene: Scene = new Scene()
 const world = new World()
@@ -120,10 +96,6 @@ function animate() {
 	render()
 }
 
-function randomIntFromInterval(min: number, max: number) { // min and max included 
-  return Math.floor(Math.random() * (max - min + 1) + min)
-}
-
 function render () { renderer.render( scene, camera.elem ) }
 
 /********************************************/
@@ -137,45 +109,6 @@ renderer.setSize(props.windowSize.width, props.windowSize.height)
 
 world.gravity.set(0, -9.82, 0)
 
-cubeBody.addShape(cubeShape)
-sphereTestBody.addShape(sphereTestShape)
-surfaceBody.addShape(surfaceShape)
-duckBody.addShape(duckShape)
-
-createSurfaceWithTexture(ghost, "/textures/blue.jpeg", { x: 0, y: 3, z: 0 }, {
-  shadow: { cast: true },
-  opacity: 0.5,
-}).then((mesh) => {
-  environment["ghost"] = { mesh: mesh }
-})
-
-let mesh = createSurface(screen1, 0xff0000, { x: 0, y: 3, z: -5 }, {shadow : {receive: true}})
-environment["screen1"] = { mesh: mesh }
-
-mesh = createSurface(screen2,  0x00ff00, { x: 3, y: 3, z: -5 })
-environment["screen2"] = { mesh: mesh }
-
-mesh = createSurface(screen3,  0x0000ff, { x: -3, y: 3, z: -5 })
-environment["screen3"] = { mesh: mesh }
-
-
-
-createSurfaceWithTexture(cube, "/textures/blue.jpeg", { x: 0, y: 5, z: 0 }, {
-  shadow: { cast: true },
-  physic: cubeBody
-}).then((mesh) => {
-  environment["cube"] = { mesh: mesh, physic: cubeBody }
-  world.addBody(cubeBody)
-})
-
-createSurfaceWithTexture(sphereTest, "/textures/blue.jpeg", { x: 1, y: 2, z: 0 }, {
-  shadow: { cast: true },
-  physic: sphereTestBody
-}).then((mesh) => {
-  environment["sphereTest"] = { mesh: mesh, physic: sphereTestBody }
-  world.addBody(sphereTestBody)
-})
-
 createSurfaceWithTexture(surface, "/textures/marbre.jpeg", { x: 0, y: 0, z:0 }, {
   shadow: { receive: true },
   physic: surfaceBody
@@ -183,15 +116,6 @@ createSurfaceWithTexture(surface, "/textures/marbre.jpeg", { x: 0, y: 0, z:0 }, 
   environment["surface"] = { mesh: mesh, physic: surfaceBody }
   world.addBody(surfaceBody)
 })
-
-loadObject("duck",loader, {x: 0, y: 10, z: 0}, "/models/Duck/Duck.gltf", {
-  physic: duckBody
-})
-.then((mesh) => {
-  environment["duck"] = { mesh: mesh, physic: duckBody }
-  world.addBody(duckBody)
-})
-
 
 setupCamera(camera)
 setupLight(lights.value, true)
@@ -210,24 +134,8 @@ onMounted(() => { // function called after every tags are mounted in the file
   if (sceneParent.value) {
     sceneParent.value.appendChild(renderer.domElement)
     animate()
-
-    //intervalLight 
-    intervalLight.value = setInterval(() => {
-      for (let light of toRaw(lights.value)) {
-        light.time =  6
-        light.to = {
-          x: randomIntFromInterval(-5, 5),
-          y: randomIntFromInterval(1, 5),
-          z: randomIntFromInterval(-5, 5),
-        }
-      }
-    }, 6000)
     render()
   }
 })
 
-onUnmounted(() => {
-  clearInterval(intervalCamera.value)
-  clearInterval(intervalLight.value)
-})
 </script>

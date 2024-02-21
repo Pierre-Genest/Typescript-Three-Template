@@ -9,8 +9,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "cannon-es": "^0.20.0",
     "three": "^0.160.1",
-    "vue": "^3.4.15"
+    "vue": "^3.4.15",
+    "vue-router": "^4.2.5"
   },
   "devDependencies": {
     "@types/three": "^0.160.0",
