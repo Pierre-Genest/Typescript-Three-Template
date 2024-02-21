@@ -1,7 +1,7 @@
-import { Scene, ColorRepresentation, Mesh, TextureLoader, Texture, PerspectiveCamera, MeshPhongMaterial, Light } from "three"
+import { ColorRepresentation, Mesh, TextureLoader, Texture, PerspectiveCamera, MeshPhongMaterial, Group, Object3DEventMap } from "three"
 import { FBXLoader, GLTFLoader, OBJLoader, DRACOLoader } from "three/examples/jsm/Addons.js"
 import { GeometryTypes, Vector3D } from "../ifaces/geometry.interface"
-import { CameraOptions, CreateSurfaceOptions, Lights, Material } from "../ifaces/basic.interface"
+import { CameraOptions, CreateSurfaceOptions, LightInfo, Lights, Material } from "../ifaces/basic.interface"
 
 /*********************************/
 /*        LOADER FUNCTIONS       */
@@ -15,40 +15,60 @@ import { CameraOptions, CreateSurfaceOptions, Lights, Material } from "../ifaces
  * @param scene The scene in wich you want to add the object
  * 
  */
-export function loadObject (name: string, loader: FBXLoader | GLTFLoader | OBJLoader, path: string, scene: Scene) {
+export function loadObject (
+  name: string, 
+  loader: FBXLoader | GLTFLoader | OBJLoader, 
+  position: Vector3D, path: string, 
+  options?: CreateSurfaceOptions): Promise<Group<Object3DEventMap>> {
+
   const parse = path.split('.')
   const extension = parse[parse.length-1]
-  
-  try {
-    switch (extension) {
-      case 'obj': 
-      case 'fbx': {
-        (loader as FBXLoader | OBJLoader).load(path, (fbx) => {
-          fbx.name = name
-          scene.add(fbx)
-        })
-        break
+
+  return new Promise((resolve, reject) => {
+    try {
+      switch (extension) {
+        case 'obj': 
+        case 'fbx': {
+          (loader as FBXLoader | OBJLoader).load(path, (fbx) => {
+            fbx.name = name
+            fbx.position.set(position.x, position.y, position.z)
+            if (options) {
+              if (options.physic) {
+                options.physic.position.set(position.x, position.y, position.z)
+              }
+            }
+            resolve(fbx)
+          })
+          break
+        }
+        case 'glb':
+        case 'gltf': {
+          const loadDraco : DRACOLoader = new DRACOLoader();
+          loadDraco.setDecoderPath('https://threejs.org/examples/jsm/libs/draco/');
+          (loader as GLTFLoader).setDRACOLoader( loadDraco );
+    
+          (loader as GLTFLoader).load(path, (gltf) => {
+            gltf.scene.name = name
+            gltf.scene.position.set(position.x, position.y, position.z)
+            if (options) {
+              if (options.physic) {
+                options.physic.position.set(position.x, position.y, position.z)
+              }
+            }
+            resolve(gltf.scene)
+          })
+          break
+        } 
+        default : {
+          reject('loadObject ne gère pas cette extension connard !')
+        }
       }
-      case 'glb':
-      case 'gltf': {
-        const loadDraco : DRACOLoader = new DRACOLoader();
-        loadDraco.setDecoderPath('https://threejs.org/examples/jsm/libs/draco/');
-        (loader as GLTFLoader).setDRACOLoader( loadDraco );
-  
-        (loader as GLTFLoader).load(path, (gltf) => {
-          gltf.scene.name = name
-          scene.add(gltf.scene)
-        })
-        break
-      } 
-      default : {
-        console.log('loadObject ne gère pas cette extension connard !')
-      }
+    } catch (err) {
+      reject(err)
     }
-  } catch (err) {
-    console.log(err)
-    throw err
-  }
+  });
+  
+  
 }
 
 /**
@@ -145,7 +165,7 @@ export function setMeshPosition (element: Mesh, pos: Vector3D) {
  * @param axes the axe on wich you want your element to rotate
  * Modify the rotation of the mesh with the axes given
  */
-export function rotateMesh(element: Mesh, axes: Vector3D) {
+export function rotateMesh(element: Mesh | Group<Object3DEventMap>, axes: Vector3D) {
   if(element) {
     element.rotation.x += axes.x
     element.rotation.y += axes.y
@@ -167,4 +187,41 @@ export function rotateMesh(element: Mesh, axes: Vector3D) {
 export function setElemPosition (elem: PerspectiveCamera | Lights, position: Vector3D, lookAt?: Vector3D) {
   elem.position.set(position.x, position.y, position.z)
   if (lookAt) elem.lookAt(lookAt.x,lookAt.y,lookAt.z)
+}
+
+
+
+// TODO 
+
+export function cameraUpdate (camera: PerspectiveCamera, fov: number, aspect: number, near: number, far: number) {
+  camera.aspect = aspect
+  camera.fov = fov
+  camera.near = near
+  camera.far = far
+  camera.updateProjectionMatrix()
+}
+
+export function handleElem (deltaTime: number, elem: LightInfo | CameraOptions) {
+  const distance: Vector3D = {
+    x: elem.to.x - elem.position.x,
+    y: elem.to.y - elem.position.y,
+    z: elem.to.z - elem.position.z
+  }
+  const speed: Vector3D = {
+    x: (distance.x / elem.time) * deltaTime,
+    y: (distance.y / elem.time) * deltaTime,
+    z: (distance.z / elem.time) * deltaTime
+  }
+
+  if(elem.time > 0) {
+    elem.time = elem.time - deltaTime
+    elem.position = {
+      x: elem.position.x + speed.x, 
+      y: elem.position.y + speed.y, 
+      z: elem.position.z + speed.z
+    }
+    setElemPosition(elem.elem, elem.position, elem.lookAt)
+  } else if (elem.position.x !== elem.to.x 
+    || elem.position.y !== elem.to.y 
+    || elem.position.z !== elem.to.z ) setElemPosition(elem.elem, elem.position, elem.lookAt)
 }

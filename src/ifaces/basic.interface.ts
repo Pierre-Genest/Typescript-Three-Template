@@ -1,4 +1,14 @@
-import { DirectionalLight, DirectionalLightHelper, LineBasicMaterial, LineDashedMaterial, Mesh, MeshBasicMaterial, MeshDepthMaterial, MeshDistanceMaterial, MeshLambertMaterial, MeshMatcapMaterial, MeshNormalMaterial, MeshPhongMaterial, MeshPhysicalMaterial, MeshStandardMaterial, MeshToonMaterial, PerspectiveCamera, PointLight, PointLightHelper, PointsMaterial, RawShaderMaterial, ShaderMaterial, ShadowMaterial, SpotLight, SpotLightHelper, SpriteMaterial } from "three"
+import { 
+  DirectionalLight, DirectionalLightHelper, Group, 
+  LineBasicMaterial, LineDashedMaterial, Mesh, 
+  MeshBasicMaterial, MeshDepthMaterial, MeshDistanceMaterial, 
+  MeshLambertMaterial, MeshMatcapMaterial, MeshNormalMaterial,
+  MeshPhongMaterial, MeshPhysicalMaterial, MeshStandardMaterial, 
+  MeshToonMaterial, Object3DEventMap, PerspectiveCamera, 
+  PointLight, PointLightHelper, PointsMaterial, 
+  RawShaderMaterial, ShaderMaterial, ShadowMaterial, 
+  SpotLight, SpotLightHelper, SpriteMaterial 
+} from "three"
 import { Vector3D } from "./geometry.interface"
 import { Body } from 'cannon-es'
 
@@ -25,8 +35,9 @@ export interface CameraOptions extends MovementOptions {
 }
 
 export type ObjInfo = {
-  mesh: Mesh,
+  mesh: Mesh | Group<Object3DEventMap>,
   physic?: Body
+  movment?: MovementOptions
 }
 
 export interface LightInfo extends MovementOptions {
