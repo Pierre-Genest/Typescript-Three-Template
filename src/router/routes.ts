@@ -11,4 +11,14 @@ export const routes: RouteRecordRaw[] = [
     name: 'survey',
     component: () => import('../views/surveyViews.vue')
   },
+  {
+    path: '/addPhysics',
+    name: 'addPhysics',
+    component: () => import('../views/AddPhysicsToObjectViews.vue')
+  },
+  {
+    path: '/followCursor',
+    name: 'followCursor',
+    component: () => import('../views/FollowTheCursorView.vue')
+  }
 ]

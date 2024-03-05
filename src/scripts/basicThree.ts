@@ -125,7 +125,7 @@ export function createSurfaceWithTexture (geometry: GeometryTypes, path: string,
 }
 
 function createMeshWithMaterial (geometry: GeometryTypes, material: Material, position: Vector3D, options?: CreateSurfaceOptions): Mesh {
-  if (options?.opacity) {
+  if (options && (options.opacity === 0 || options.opacity)) {
     material.transparent = true
     material.opacity = options.opacity
   }
@@ -139,8 +139,8 @@ function createMeshWithMaterial (geometry: GeometryTypes, material: Material, po
       options.physic.position.set(position.x, position.y, position.z)
     
     if (options.shadow) {
-      if (options.shadow.cast) mesh.castShadow = true
-      if (options.shadow.receive) mesh.receiveShadow = true
+      if (options.shadow.cast) mesh.castShadow = options.shadow.cast
+      if (options.shadow.receive) mesh.receiveShadow = options.shadow.receive
     }
   }
 

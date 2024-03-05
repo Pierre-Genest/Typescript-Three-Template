@@ -1,7 +1,5 @@
 <template>
-  <div class="width-100 height-100">
-    <surveyThreeComponentVue v-if="windowSize.height !== 0 && windowSize.width !== 0" :window-size="windowSize"/>
-  </div>
+  <FollowTheCursorComponent ref="scene"  v-if="windowSize.height !== 0 && windowSize.width !== 0" :window-size="windowSize"/>
 
   <Teleport to="#overlay-informations">
   </Teleport>
@@ -11,12 +9,11 @@
 </template>
 
 <script setup lang="ts">
-import surveyThreeComponentVue from '../components/surveyThreeComponent.vue';
-
 /********************************************/
 /*              IMPORTS                     */
 /********************************************/
-import { reactive } from 'vue'
+import { reactive, onUnmounted, Teleport } from 'vue'
+import FollowTheCursorComponent from '../components/FollowTheCursorComponent.vue';
 
 /********************************************/
 /*           TYPES ASSIGNATION              */
@@ -48,4 +45,5 @@ window.addEventListener("resize", (_) => {resize()});
 /********************************************/
 /*     FUNCTION CALL IN VUE CYCLE LIFE      */
 /********************************************/
+onUnmounted(() => { window.removeEventListener("resize", resize) })
 </script>
