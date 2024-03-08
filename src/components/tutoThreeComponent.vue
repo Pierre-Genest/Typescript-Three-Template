@@ -35,10 +35,12 @@ const far = ref(1000)
 const environment = reactive<Record<string, ObjInfo>>({})
 const camera: CameraOptions = reactive({
   elem: new PerspectiveCamera( fov.value, props.windowSize.width / props.windowSize.height, near.value, far.value ),
-  position: { x: 0, y: 0, z: 0 },
-  time: 0,
-  to: { x: 2, y: 0, z: 10 },
-  lookAt: {x: 0, y: 0, z: 0}
+  movement: {
+    position: { x: 0, y: 0, z: 0 },
+    time: 0.1,
+    to: { x: 5, y: 10, z: 10 },
+    lookAt: {x: 0, y: 0, z: 0}
+  }
 })
 
 const sceneParent: Ref<HTMLElement | undefined> = ref()
@@ -77,20 +79,28 @@ const renderer: WebGLRenderer = new WebGLRenderer()
 /*             FUNCTIONNALITIES             */
 /********************************************/
 
+function randomIntFromInterval (min: number, max: number) { 
+  return Math.floor(Math.random() * (max - min + 1) + min)
+}
+
+/********************************************/
+/*    FUNCTIONNALITIES THREE CYCLE LIFE     */
+/********************************************/
+
 function displayAll (deltaTime: number) {
   if (helpers.value) scene.add(axeHelper)
   handleElem(deltaTime, camera)
   displayLights(deltaTime)
   triggerPhysics()
-  displayEnvironments()
+  displayEnvironments(deltaTime)
   renderer.info.reset(); 
 }
 
 function triggerPhysics () {
   for (let key in environment) {
     if (environment[key].physic) {
-      environment[key].mesh.position.copy(environment[key].physic.position)
-      environment[key].mesh.quaternion.copy(environment[key].physic.quaternion)
+      environment[key].elem.position.copy(environment[key].physic.position)
+      environment[key].elem.quaternion.copy(environment[key].physic.quaternion)
     }
   }
 }
@@ -104,24 +114,21 @@ function displayLights (deltaTime: number) {
 
 }
 
-function displayEnvironments () {
+function displayEnvironments (deltaTime: number) {
   for (let key in environment) {
-    scene.add(environment[key].mesh.clone())
+    if (!environment[key].physic) handleElem(deltaTime, environment[key])
+    scene.add(environment[key].elem.clone())
   }
 }
 
 function animate() {
   const deltaTime = clock.getDelta()
+
+  scene.clear()
   requestAnimationFrame( animate )
   world.step(deltaTime)
-  scene.clear()
-  if (environment["ghost"]) rotateMesh(environment["ghost"].mesh, {x: 0, y: 0.01, z:0.0})
   displayAll(deltaTime)
 	render()
-}
-
-function randomIntFromInterval(min: number, max: number) { // min and max included 
-  return Math.floor(Math.random() * (max - min + 1) + min)
 }
 
 function render () { renderer.render( scene, camera.elem ) }
@@ -146,17 +153,17 @@ createSurfaceWithTexture(ghost, "/textures/blue.jpeg", { x: 0, y: 3, z: 0 }, {
   shadow: { cast: true },
   opacity: 0.5,
 }).then((mesh) => {
-  environment["ghost"] = { mesh: mesh }
+  environment["ghost"] = { elem: mesh }
 })
 
-let mesh = createSurface(screen1, 0xff0000, { x: 0, y: 3, z: -5 }, {shadow : {receive: true}})
-environment["screen1"] = { mesh: mesh }
+let mesh = createSurface(screen1, 0xff0000, { x: 0, y: 3, z: -5 })
+environment["screen1"] = { elem: mesh }
 
-mesh = createSurface(screen2,  0x00ff00, { x: 3, y: 3, z: -5 })
-environment["screen2"] = { mesh: mesh }
+mesh = createSurface(screen2, 0x00ff00, { x: 3, y: 3, z: -5 })
+environment["screen2"] = { elem: mesh }
 
 mesh = createSurface(screen3,  0x0000ff, { x: -3, y: 3, z: -5 })
-environment["screen3"] = { mesh: mesh }
+environment["screen3"] = { elem: mesh }
 
 
 
@@ -164,7 +171,7 @@ createSurfaceWithTexture(cube, "/textures/blue.jpeg", { x: 0, y: 5, z: 0 }, {
   shadow: { cast: true },
   physic: cubeBody
 }).then((mesh) => {
-  environment["cube"] = { mesh: mesh, physic: cubeBody }
+  environment["cube"] = { elem: mesh, physic: cubeBody }
   world.addBody(cubeBody)
 })
 
@@ -172,7 +179,7 @@ createSurfaceWithTexture(sphereTest, "/textures/blue.jpeg", { x: 1, y: 2, z: 0 }
   shadow: { cast: true },
   physic: sphereTestBody
 }).then((mesh) => {
-  environment["sphereTest"] = { mesh: mesh, physic: sphereTestBody }
+  environment["sphereTest"] = { elem: mesh, physic: sphereTestBody }
   world.addBody(sphereTestBody)
 })
 
@@ -180,7 +187,7 @@ createSurfaceWithTexture(surface, "/textures/marbre.jpeg", { x: 0, y: 0, z:0 }, 
   shadow: { receive: true },
   physic: surfaceBody
 }).then((mesh) => {
-  environment["surface"] = { mesh: mesh, physic: surfaceBody }
+  environment["surface"] = { elem: mesh, physic: surfaceBody }
   world.addBody(surfaceBody)
 })
 
@@ -188,7 +195,7 @@ loadObject("duck",loader, {x: 0, y: 10, z: 0}, "/models/Duck/Duck.gltf", {
   physic: duckBody
 })
 .then((mesh) => {
-  environment["duck"] = { mesh: mesh, physic: duckBody }
+  environment["duck"] = { elem: mesh, physic: duckBody }
   world.addBody(duckBody)
 })
 
@@ -214,11 +221,13 @@ onMounted(() => { // function called after every tags are mounted in the file
     //intervalLight 
     intervalLight.value = setInterval(() => {
       for (let light of toRaw(lights.value)) {
-        light.time =  6
-        light.to = {
-          x: randomIntFromInterval(-5, 5),
-          y: randomIntFromInterval(1, 5),
-          z: randomIntFromInterval(-5, 5),
+        if (light.movement) {
+          light.movement.time =  6
+          light.movement.to = {
+            x: randomIntFromInterval(-5, 5),
+            y: randomIntFromInterval(1, 5),
+            z: randomIntFromInterval(-5, 5),
+          }
         }
       }
     }, 6000)

@@ -1,7 +1,9 @@
 import { ColorRepresentation, Mesh, TextureLoader, Texture, PerspectiveCamera, MeshPhongMaterial, Group, Object3DEventMap } from "three"
 import { FBXLoader, GLTFLoader, OBJLoader, DRACOLoader } from "three/examples/jsm/Addons.js"
 import { GeometryTypes, Vector3D } from "../ifaces/geometry.interface"
-import { CameraOptions, CreateSurfaceOptions, LightInfo, Lights, Material } from "../ifaces/basic.interface"
+import { CameraOptions, CreateSurfaceOptions, LightInfo, Lights, Material, ObjInfo } from "../ifaces/basic.interface"
+import { Body, Vec3 } from 'cannon-es'
+
 
 /*********************************/
 /*        LOADER FUNCTIONS       */
@@ -124,6 +126,13 @@ export function createSurfaceWithTexture (geometry: GeometryTypes, path: string,
     }) 
 }
 
+/**
+ * @param geometry the GeometryTypes you want to create your mesh with
+ * @param material the Material you want to put on the mesh
+ * @param position The position with type Vector3D
+ * @param options CreateSurfaceOptions Options such as transparency, physic, etc...
+ * Create a mesh with a Material and differents Options (transparency, physic, etc...)
+ */
 function createMeshWithMaterial (geometry: GeometryTypes, material: Material, position: Vector3D, options?: CreateSurfaceOptions): Mesh {
   if (options && (options.opacity === 0 || options.opacity)) {
     material.transparent = true
@@ -154,9 +163,7 @@ function createMeshWithMaterial (geometry: GeometryTypes, material: Material, po
  * Modify the position of the mesh with the position given
  */
 export function setMeshPosition (element: Mesh, pos: Vector3D) {
-  element.position.x = pos.x
-  element.position.y = pos.y
-  element.position.z = pos.z
+  element.position.set(pos.x, pos.y, pos.z)
 }
 
 /**
@@ -179,20 +186,34 @@ export function rotateMesh(element: Mesh | Group<Object3DEventMap>, axes: Vector
 
 /**
  * 
- * @param elem the camera that is going to be updated
+ * @param elem the elem that is going to be updated
  * @param position the position you are going to move to
  * @param lookAt (not necessary) the position that needs to be lookAt
- * Update the camera position
+ * Set the element position
  */
-export function setElemPosition (elem: PerspectiveCamera | Lights, position: Vector3D, lookAt?: Vector3D) {
+export function setElemPosition (elem: PerspectiveCamera | Lights | Mesh | Group<Object3DEventMap>, position: Vector3D, lookAt?: Vector3D) {
   elem.position.set(position.x, position.y, position.z)
   if (lookAt) elem.lookAt(lookAt.x,lookAt.y,lookAt.z)
 }
 
+/**
+ * 
+ * @param elem the physic to update
+ * @param velocity the velocity you will add to the elem
+ * Set the element position
+ */
+export function addVelocityToElem (elem: Body | undefined, velocity: Vector3D) {
+  if (elem) elem.applyImpulse(new Vec3(velocity.x, velocity.y, velocity.z))
+}
 
-
-// TODO 
-
+/**
+ * @param camera the camera that is going to be updated
+ * @param fov 
+ * @param aspect
+ * @param near 
+ * @param far 
+ * Update the camera viewport
+ */
 export function cameraUpdate (camera: PerspectiveCamera, fov: number, aspect: number, near: number, far: number) {
   camera.aspect = aspect
   camera.fov = fov
@@ -201,27 +222,46 @@ export function cameraUpdate (camera: PerspectiveCamera, fov: number, aspect: nu
   camera.updateProjectionMatrix()
 }
 
-export function handleElem (deltaTime: number, elem: LightInfo | CameraOptions) {
-  const distance: Vector3D = {
-    x: elem.to.x - elem.position.x,
-    y: elem.to.y - elem.position.y,
-    z: elem.to.z - elem.position.z
-  }
-  const speed: Vector3D = {
-    x: (distance.x / elem.time) * deltaTime,
-    y: (distance.y / elem.time) * deltaTime,
-    z: (distance.z / elem.time) * deltaTime
+/**
+ * @param camera the camera that is going to be updated
+ * @param fov 
+ * @param aspect
+ * @param near 
+ * @param far 
+ * Update the camera viewport
+ */
+export function handleElem (deltaTime: number, elem: LightInfo | CameraOptions | ObjInfo) {
+  if (elem.movement) {
+    const distance: Vector3D = {
+      x: elem.movement.to.x - elem.movement.position.x,
+      y: elem.movement.to.y - elem.movement.position.y,
+      z: elem.movement.to.z - elem.movement.position.z
+    }
+    const speed: Vector3D = {
+      x: (distance.x / elem.movement.time) * deltaTime,
+      y: (distance.y / elem.movement.time) * deltaTime,
+      z: (distance.z / elem.movement.time) * deltaTime
+    }
+  
+    if(elem.movement.time > 0) {
+      elem.movement.time = elem.movement.time - deltaTime
+      elem.movement.position = {
+        x: elem.movement.position.x + speed.x, 
+        y: elem.movement.position.y + speed.y, 
+        z: elem.movement.position.z + speed.z
+      }
+
+      if ((elem as ObjInfo).physic) {
+        addVelocityToElem((elem as ObjInfo).physic, speed)
+      } else {
+        setElemPosition(elem.elem, elem.movement.position, elem.movement.lookAt)
+      }
+    } else if (distance.x < 0 || distance.y < 0 || distance.z < 0)
+      if ((elem as ObjInfo).physic) {
+        addVelocityToElem((elem as ObjInfo).physic, speed)
+      } else {
+        setElemPosition(elem.elem, elem.movement.position, elem.movement.lookAt)
+      } 
   }
 
-  if(elem.time > 0) {
-    elem.time = elem.time - deltaTime
-    elem.position = {
-      x: elem.position.x + speed.x, 
-      y: elem.position.y + speed.y, 
-      z: elem.position.z + speed.z
-    }
-    setElemPosition(elem.elem, elem.position, elem.lookAt)
-  } else if (elem.position.x !== elem.to.x 
-    || elem.position.y !== elem.to.y 
-    || elem.position.z !== elem.to.z ) setElemPosition(elem.elem, elem.position, elem.lookAt)
 }

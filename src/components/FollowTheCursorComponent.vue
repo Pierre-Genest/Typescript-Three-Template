@@ -6,8 +6,8 @@
 /********************************************/
 /*              IMPORTS                     */
 /********************************************/
-import { Ref, onMounted, reactive, ref, toRaw, watch } from 'vue'
-import { Scene, PerspectiveCamera, WebGLRenderer, AxesHelper, Clock, SphereGeometry } from 'three'
+import { Ref, onMounted, onUnmounted, reactive, ref, toRaw, watch } from 'vue'
+import { Scene, PerspectiveCamera, WebGLRenderer, AxesHelper, Clock, SphereGeometry, Raycaster, Vector2 } from 'three'
 import { Body, Sphere, World } from 'cannon-es'
 import { setupCamera, setupLight } from '../scripts/FollowTheCursorComponent' 
 import { cameraUpdate, createSurface, handleElem } from '../scripts/basicThree'
@@ -25,19 +25,18 @@ type MyProps = { windowSize: Size2D }
 const props = defineProps < MyProps >()
 const helpers = ref(true) // to trigger or untrigger all helpers
 
-const to = reactive({x: 0, y:0})
-
-const timer: Ref<ReturnType<typeof setInterval> | undefined> = ref()
 const fov = ref(75)
 const near = ref(0.1)
 const far = ref(1000)
 const environment = reactive<Record<string, ObjInfo>>({})
 const camera: CameraOptions = reactive({
   elem: new PerspectiveCamera( fov.value, props.windowSize.width / props.windowSize.height, near.value, far.value ),
-  position: { x: 0, y: 0, z: 0 },
-  time: 0,
-  to: { x: 2, y: 0, z: 10 },
-  lookAt: {x: 0, y: 0, z: 0}
+  movement: {
+    position: { x: 0, y: 0, z: 0 },
+    time: 0.1,
+    to: { x: 5, y: 5, z: 5 },
+    lookAt: {x: 0, y: 0, z: 0}
+  }
 })
 const numberOfBalls = ref(1)
 
@@ -50,8 +49,21 @@ const world = new World()
 const clock: Clock = new Clock()
 const renderer: WebGLRenderer = new WebGLRenderer()
 
+const raycaster = new Raycaster()
+const mouse: Vector2 = reactive(new Vector2(-1, -1))
+
+const interval: Ref<undefined | ReturnType<typeof setInterval>> = ref()
+
 /********************************************/
 /*             FUNCTIONNALITIES             */
+/********************************************/
+
+function randomIntFromInterval (min: number, max: number) { 
+  return Math.floor(Math.random() * (max - min + 1) + min)
+}
+
+/********************************************/
+/*    FUNCTIONNALITIES THREE CYCLE LIFE     */
 /********************************************/
 
 function displayAll (deltaTime: number) {
@@ -59,21 +71,20 @@ function displayAll (deltaTime: number) {
   handleElem(deltaTime, camera)
   displayLights(deltaTime)
   triggerPhysics()
-  displayEnvironments()
-  renderer.info.reset(); 
+  displayEnvironments(deltaTime)
+  renderer.info.reset()
 }
 
 function triggerPhysics () {
   for (let key in environment) {
     if (environment[key].physic) {
-      environment[key].mesh.position.copy(environment[key].physic.position)
-      environment[key].mesh.quaternion.copy(environment[key].physic.quaternion)
+      environment[key].elem.position.copy(environment[key].physic.position)
+      environment[key].elem.quaternion.copy(environment[key].physic.quaternion)
     }
   }
 }
 
 function displayLights (deltaTime: number) {
-  let i = 0;
   for (let light of toRaw(lights.value)) {
     handleElem(deltaTime, light)
     scene.add(light.elem)
@@ -82,9 +93,10 @@ function displayLights (deltaTime: number) {
 
 }
 
-function displayEnvironments () {
+function displayEnvironments (deltaTime: number) {
   for (let key in environment) {
-    scene.add(environment[key].mesh.clone())
+    handleElem(deltaTime, environment[key])
+    scene.add(environment[key].elem.clone())
   }
 }
 
@@ -95,10 +107,6 @@ function animate() {
   scene.clear()
   displayAll(deltaTime)
 	render()
-}
-
-function randomIntFromInterval (min: number, max: number) { 
-  return Math.floor(Math.random() * (max - min + 1) + min)
 }
 
 function render () { renderer.render( scene, camera.elem ) }
@@ -125,7 +133,7 @@ for(let i = 1; i<= numberOfBalls.value; i++) {
   const mesh = createSurface(sphereMesh, 0x00ff00, { x: 0, y: 0, z: 0 }, { physic: sphereBody })
 
   environment[`elem-${i}`] = { 
-    mesh: mesh,
+    elem: mesh,
     physic: sphereBody
   }
   world.addBody(sphereBody)
@@ -135,6 +143,18 @@ console.log(environment)
 
 setupCamera(camera)
 setupLight(lights.value, true)
+
+
+window.addEventListener("touchmove", (event) => {
+  mouse.x = (event.touches[0].clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(event.touches[0].clientY / window.innerHeight) * 2 + 1;
+
+  raycaster.setFromCamera(mouse, camera.elem)
+
+  const intersects = raycaster.intersectObjects(scene.children)
+
+  console.log(intersects)
+})
 
 
 /********************************************/
@@ -150,10 +170,29 @@ watch(props, (newProps: MyProps) => {
 onMounted(() => { // function called after every tags are mounted in the file
   if (sceneParent.value) {
     sceneParent.value.appendChild(renderer.domElement)
+    interval.value = setInterval(() => {
+      for(let i = 1; i<= numberOfBalls.value; i++)
+        environment[`elem-${i}`].movement = {
+            position: { 
+              x: environment[`elem-${i}`].elem.position.x, 
+              y: environment[`elem-${i}`].elem.position.y, 
+              z: environment[`elem-${i}`].elem.position.z 
+            },
+            time: 5,
+            to: { 
+              x: randomIntFromInterval(-3, 3), 
+              y: randomIntFromInterval(-3, 3), 
+              z: randomIntFromInterval(-3, 3)
+            },
+        }
+    }, 5000)
     animate()
     render()
   }
 })
 
+onUnmounted(() => {
+  clearInterval(interval.value)
+})
 
 </script>

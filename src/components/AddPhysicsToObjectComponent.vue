@@ -31,13 +31,13 @@ const far = ref(100)
 const environment = reactive<Record<string, ObjInfo>>({})
 const camera: CameraOptions = reactive({
   elem: new PerspectiveCamera( fov.value, props.windowSize.width / props.windowSize.height, near.value, far.value ),
-  position: { x: 0, y: 0, z: 0 },
-  time: 0,
-  to: { x: 2, y: 0, z: 10 },
-  lookAt: {x: 0, y: 0, z: 0}
+  movement: {
+    position: { x: 0, y: 0, z: 0 },
+    time: 0.1,
+    to: { x: 5, y: 5, z: 5 },
+    lookAt: {x: 0, y: 0, z: 0}
+  }
 })
-
-const mouse: Vector2 = reactive(new Vector2(-1, -1))
 
 const sceneParent: Ref<HTMLElement | undefined> = ref()
 const lights: Ref<LightInfo[]> = ref([])
@@ -52,7 +52,8 @@ const realCubeSize = 0.25
 const cube = new BoxGeometry(realCubeSize, realCubeSize, realCubeSize);
 const cubeSize = 0.5
 
-const raycaster = new Raycaster();
+const raycaster = new Raycaster()
+const mouse: Vector2 = reactive(new Vector2(-1, -1))
 
 /********************************************/
 /*             FUNCTIONNALITIES             */
@@ -77,26 +78,30 @@ function createWallOfBock() {
     for (let y = 0; y < size.y; y++) {
       for (let z = 0; z < size.z; z++) {
         let mesh = createSurface(cube, 0xffffff, { x: x * cubeSize, y:  y * cubeSize, z: z * cubeSize }, {shadow : {receive: true}})
-        environment[`${x* cubeSize}-${y* cubeSize}-${z* cubeSize}`] = { mesh: mesh }
+        environment[`${x* cubeSize}-${y* cubeSize}-${z* cubeSize}`] = { elem: mesh }
       }
     }
   }
 }
+
+/********************************************/
+/*    FUNCTIONNALITIES THREE CYCLE LIFE     */
+/********************************************/
 
 function displayAll (deltaTime: number) {
   if (helpers.value) scene.add(axeHelper)
   handleElem(deltaTime, camera)
   displayLights(deltaTime)
   triggerPhysics()
-  displayEnvironments()
+  displayEnvironments(deltaTime)
   renderer.info.reset(); 
 }
 
 function triggerPhysics () {
   for (let key in environment) {
     if (environment[key].physic) {
-      environment[key].mesh.position.copy(environment[key].physic.position)
-      environment[key].mesh.quaternion.copy(environment[key].physic.quaternion)
+      environment[key].elem.position.copy(environment[key].physic.position)
+      environment[key].elem.quaternion.copy(environment[key].physic.quaternion)
     }
   }
 }
@@ -110,9 +115,10 @@ function displayLights (deltaTime: number) {
 
 }
 
-function displayEnvironments () {
+function displayEnvironments (deltaTime: number) {
   for (let key in environment) {
-    scene.add(environment[key].mesh.clone())
+    if (!environment[key].physic) handleElem(deltaTime, environment[key])
+    scene.add(environment[key].elem.clone())
   }
 }
 
@@ -121,7 +127,6 @@ function animate() {
   requestAnimationFrame( animate )
   world.step(deltaTime)
   scene.clear()
-  if (environment["ghost"]) rotateMesh(environment["ghost"].mesh, {x: 0, y: 0.01, z:0.0})
   displayAll(deltaTime)
 	render()
 }
@@ -157,9 +162,9 @@ window.addEventListener("touchmove", (event) => {
   mouse.x = (event.touches[0].clientX / window.innerWidth) * 2 - 1;
   mouse.y = -(event.touches[0].clientY / window.innerHeight) * 2 + 1;
 
-  raycaster.setFromCamera(mouse, camera.elem);
+  raycaster.setFromCamera(mouse, camera.elem)
 
-  const intersects = raycaster.intersectObjects(scene.children);
+  const intersects = raycaster.intersectObjects(scene.children)
 
   for (let mesh of intersects) checkIntersection(mesh)
 })

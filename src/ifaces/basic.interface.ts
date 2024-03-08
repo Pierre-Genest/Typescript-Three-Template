@@ -24,18 +24,20 @@ export type CreateSurfaceOptions = {
 }
 
 export interface MovementOptions {
-  position: Vector3D,
-  time: number,
-  to: Vector3D,
-  lookAt?: Vector3D
+  movement?: {
+    position: Vector3D,
+    time: number,
+    to: Vector3D,
+    lookAt?: Vector3D
+  }
 }
 
 export interface CameraOptions extends MovementOptions {
   elem: PerspectiveCamera
 }
 
-export type ObjInfo = {
-  mesh: Mesh | Group<Object3DEventMap>,
+export interface ObjInfo extends MovementOptions {
+  elem: Mesh | Group<Object3DEventMap>,
   physic?: Body
   movment?: MovementOptions
 }

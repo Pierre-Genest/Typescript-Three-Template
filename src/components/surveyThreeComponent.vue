@@ -31,10 +31,12 @@ const far = ref(1000)
 const environment = reactive<Record<string, ObjInfo>>({})
 const camera: CameraOptions = reactive({
   elem: new PerspectiveCamera( fov.value, props.windowSize.width / props.windowSize.height, near.value, far.value ),
-  position: { x: 0, y: 0, z: 0 },
-  time: 0,
-  to: { x: 2, y: 0, z: 10 },
-  lookAt: {x: 0, y: 0, z: 0}
+  movement: {
+    position: { x: 0, y: 0, z: 0 },
+    time: 0.1,
+    to: { x: 2, y: 0, z: 10 },
+    lookAt: {x: 0, y: 0, z: 0}
+  }
 })
 
 const sceneParent: Ref<HTMLElement | undefined> = ref()
@@ -53,20 +55,25 @@ const renderer: WebGLRenderer = new WebGLRenderer()
 /*             FUNCTIONNALITIES             */
 /********************************************/
 
+
+/********************************************/
+/*    FUNCTIONNALITIES THREE CYCLE LIFE     */
+/********************************************/
+
 function displayAll (deltaTime: number) {
   if (helpers.value) scene.add(axeHelper)
   handleElem(deltaTime, camera)
   displayLights(deltaTime)
   triggerPhysics()
-  displayEnvironments()
+  displayEnvironments(deltaTime)
   renderer.info.reset(); 
 }
 
 function triggerPhysics () {
   for (let key in environment) {
     if (environment[key].physic) {
-      environment[key].mesh.position.copy(environment[key].physic.position)
-      environment[key].mesh.quaternion.copy(environment[key].physic.quaternion)
+      environment[key].elem.position.copy(environment[key].physic.position)
+      environment[key].elem.quaternion.copy(environment[key].physic.quaternion)
     }
   }
 }
@@ -80,9 +87,10 @@ function displayLights (deltaTime: number) {
 
 }
 
-function displayEnvironments () {
+function displayEnvironments (deltaTime: number) {
   for (let key in environment) {
-    scene.add(environment[key].mesh.clone())
+    if (!environment[key].physic) handleElem(deltaTime, environment[key])
+    scene.add(environment[key].elem.clone())
   }
 }
 
@@ -91,7 +99,6 @@ function animate() {
   requestAnimationFrame( animate )
   world.step(deltaTime)
   scene.clear()
-  if (environment["ghost"]) rotateMesh(environment["ghost"].mesh, {x: 0, y: 0.01, z:0.0})
   displayAll(deltaTime)
 	render()
 }
@@ -113,7 +120,7 @@ createSurfaceWithTexture(surface, "/textures/marbre.jpeg", { x: 0, y: 0, z:0 }, 
   shadow: { receive: true },
   physic: surfaceBody
 }).then((mesh) => {
-  environment["surface"] = { mesh: mesh, physic: surfaceBody }
+  environment["surface"] = { elem: mesh, physic: surfaceBody }
   world.addBody(surfaceBody)
 })
 
