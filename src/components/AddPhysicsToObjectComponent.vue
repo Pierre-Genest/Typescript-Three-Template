@@ -94,7 +94,7 @@ function displayAll (deltaTime: number) {
   displayLights(deltaTime)
   triggerPhysics()
   displayEnvironments(deltaTime)
-  renderer.info.reset(); 
+  renderer.info.reset()
 }
 
 function triggerPhysics () {
@@ -102,6 +102,7 @@ function triggerPhysics () {
     if (environment[key].physic) {
       environment[key].elem.position.copy(environment[key].physic.position)
       environment[key].elem.quaternion.copy(environment[key].physic.quaternion)
+      if (environment[key].movement) environment[key].movement.position = { ...environment[key].elem.position }
     }
   }
 }
@@ -117,7 +118,7 @@ function displayLights (deltaTime: number) {
 
 function displayEnvironments (deltaTime: number) {
   for (let key in environment) {
-    if (!environment[key].physic) handleElem(deltaTime, environment[key])
+    handleElem(deltaTime, environment[key])
     scene.add(environment[key].elem.clone())
   }
 }

@@ -203,7 +203,9 @@ export function setElemPosition (elem: PerspectiveCamera | Lights | Mesh | Group
  * Set the element position
  */
 export function addVelocityToElem (elem: Body | undefined, velocity: Vector3D) {
-  if (elem) elem.applyImpulse(new Vec3(velocity.x, velocity.y, velocity.z))
+  if (elem) {
+    elem.applyImpulse(new Vec3(velocity.x, velocity.y, velocity.z))
+  }
 }
 
 /**

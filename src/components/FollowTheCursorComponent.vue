@@ -80,6 +80,7 @@ function triggerPhysics () {
     if (environment[key].physic) {
       environment[key].elem.position.copy(environment[key].physic.position)
       environment[key].elem.quaternion.copy(environment[key].physic.quaternion)
+      if (environment[key].movement) environment[key].movement.position = { ...environment[key].elem.position }
     }
   }
 }
@@ -171,6 +172,12 @@ onMounted(() => { // function called after every tags are mounted in the file
   if (sceneParent.value) {
     sceneParent.value.appendChild(renderer.domElement)
     interval.value = setInterval(() => {
+      const to = { 
+        x: randomIntFromInterval(-1, 1), 
+        y: randomIntFromInterval(-1, 1), 
+        z: randomIntFromInterval(-1, 1)
+      }
+      console.log(to)
       for(let i = 1; i<= numberOfBalls.value; i++)
         environment[`elem-${i}`].movement = {
             position: { 
@@ -179,11 +186,7 @@ onMounted(() => { // function called after every tags are mounted in the file
               z: environment[`elem-${i}`].elem.position.z 
             },
             time: 5,
-            to: { 
-              x: randomIntFromInterval(-3, 3), 
-              y: randomIntFromInterval(-3, 3), 
-              z: randomIntFromInterval(-3, 3)
-            },
+            to: to,
         }
     }, 5000)
     animate()
