@@ -23,7 +23,7 @@ type MyProps = { windowSize: Size2D }
 /*           VARIABLE ASSIGNATION           */
 /********************************************/
 const props = defineProps < MyProps >()
-const helpers = ref(false) // to trigger or untrigger all helpers
+const helpers = ref(true) // to trigger or untrigger all helpers
 
 const intervalCamera: Ref<undefined | ReturnType<typeof setInterval>> = ref()
 const intervalLight: Ref<undefined | ReturnType<typeof setInterval>> = ref()
@@ -51,9 +51,9 @@ const duckBody = new Body({ mass: 1 })
 
 const ghost = new BoxGeometry( 1, 1, 1 );
 
-const screen1 =  new PlaneGeometry( 3, 5 )
-const screen2 =  new PlaneGeometry( 3, 5 )
-const screen3 =  new PlaneGeometry( 3, 5 )
+const screen1 = new PlaneGeometry( 3, 5 )
+const screen2 = new PlaneGeometry( 3, 5 )
+const screen3 = new PlaneGeometry( 3, 5 )
 
 const cube = new BoxGeometry( 1, 1, 1 );
 const cubeShape = new Box(new Vec3(0.5, 0.5, 0.5))
@@ -99,11 +99,12 @@ function triggerPhysics () {
     const physic = environment[key].physic
     if (physic) {
       const position = new Vector3(physic.position.x, physic.position.y, physic.position.z)
-      const quaternion = new Quaternion(physic.quaternion.x, physic.quaternion.y, physic.quaternion.z)
+      const quaternion = new Quaternion(physic.quaternion.x, physic.quaternion.y, physic.quaternion.z, physic.quaternion.w)
       const movement = environment[key].movement
 
       environment[key].elem.position.copy(position)
       environment[key].elem.quaternion.copy(quaternion)
+
 
       if (movement) movement.position = { ...environment[key].elem.position }
     }

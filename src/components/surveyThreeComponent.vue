@@ -74,7 +74,7 @@ function triggerPhysics () {
     const physic = environment[key].physic
     if (physic) {
       const position = new Vector3(physic.position.x, physic.position.y, physic.position.z)
-      const quaternion = new Quaternion(physic.quaternion.x, physic.quaternion.y, physic.quaternion.z)
+      const quaternion = new Quaternion(physic.quaternion.x, physic.quaternion.y, physic.quaternion.z, physic.quaternion.w)
       const movement = environment[key].movement
 
       environment[key].elem.position.copy(position)
@@ -103,10 +103,10 @@ function displayEnvironments (deltaTime: number) {
 }
 
 function animate() {
+  scene.clear()
   const deltaTime = clock.getDelta()
   requestAnimationFrame( animate )
   world.step(deltaTime)
-  scene.clear()
   displayAll(deltaTime)
 	render()
 }
