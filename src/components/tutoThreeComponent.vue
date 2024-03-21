@@ -7,13 +7,12 @@
 /*              IMPORTS                     */
 /********************************************/
 import { Ref, onMounted, onUnmounted, reactive, ref, toRaw, watch } from 'vue'
-import { Scene, PerspectiveCamera, WebGLRenderer, BoxGeometry, AxesHelper, SphereGeometry, Clock, PlaneGeometry } from 'three'
+import { Scene, PerspectiveCamera, WebGLRenderer, BoxGeometry, AxesHelper, SphereGeometry, Clock, PlaneGeometry, Vector3, Quaternion } from 'three'
 import { Body, Sphere, Box, World, Vec3 } from 'cannon-es'
 import { setupCamera, setupLight } from '../scripts/tutoThreeComponent' 
-import { cameraUpdate, createSurface, createSurfaceWithTexture, handleElem, loadObject, rotateMesh } from '../scripts/basicThree'
+import { cameraUpdate, createSurface, createSurfaceWithTexture, handleElem } from '../scripts/basicThree'
 import { Size2D } from '../ifaces/geometry.interface'
 import { CameraOptions, LightInfo, ObjInfo } from '../ifaces/basic.interface'
-import { GLTFLoader } from 'three/examples/jsm/Addons.js'
 
 /********************************************/
 /*           TYPES ASSIGNATION              */
@@ -24,7 +23,7 @@ type MyProps = { windowSize: Size2D }
 /*           VARIABLE ASSIGNATION           */
 /********************************************/
 const props = defineProps < MyProps >()
-const helpers = ref(true) // to trigger or untrigger all helpers
+const helpers = ref(false) // to trigger or untrigger all helpers
 
 const intervalCamera: Ref<undefined | ReturnType<typeof setInterval>> = ref()
 const intervalLight: Ref<undefined | ReturnType<typeof setInterval>> = ref()
@@ -47,7 +46,6 @@ const sceneParent: Ref<HTMLElement | undefined> = ref()
 const lights: Ref<LightInfo[]> = ref([])
 const axeHelper = new AxesHelper(10)
 
-const loader = new GLTFLoader()
 const duckShape = new Sphere(0.7)
 const duckBody = new Body({ mass: 1 })
 
@@ -98,13 +96,20 @@ function displayAll (deltaTime: number) {
 
 function triggerPhysics () {
   for (let key in environment) {
-    if (environment[key].physic) {
-      environment[key].elem.position.copy(environment[key].physic.position)
-      environment[key].elem.quaternion.copy(environment[key].physic.quaternion)
-      if (environment[key].movement) environment[key].movement.position = { ...environment[key].elem.position }
+    const physic = environment[key].physic
+    if (physic) {
+      const position = new Vector3(physic.position.x, physic.position.y, physic.position.z)
+      const quaternion = new Quaternion(physic.quaternion.x, physic.quaternion.y, physic.quaternion.z)
+      const movement = environment[key].movement
+
+      environment[key].elem.position.copy(position)
+      environment[key].elem.quaternion.copy(quaternion)
+
+      if (movement) movement.position = { ...environment[key].elem.position }
     }
   }
 }
+
 
 function displayLights (deltaTime: number) {
   for (let light of toRaw(lights.value)) {
@@ -190,15 +195,6 @@ createSurfaceWithTexture(surface, "/textures/marbre.jpeg", { x: 0, y: 0, z:0 }, 
   environment["surface"] = { elem: mesh, physic: surfaceBody }
   world.addBody(surfaceBody)
 })
-
-loadObject("duck",loader, {x: 0, y: 10, z: 0}, "/models/Duck/Duck.gltf", {
-  physic: duckBody
-})
-.then((mesh) => {
-  environment["duck"] = { elem: mesh, physic: duckBody }
-  world.addBody(duckBody)
-})
-
 
 setupCamera(camera)
 setupLight(lights.value, true)

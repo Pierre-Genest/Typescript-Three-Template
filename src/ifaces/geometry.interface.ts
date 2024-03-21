@@ -1,4 +1,8 @@
-import { BoxGeometry, CapsuleGeometry, CircleGeometry, ConeGeometry, CylinderGeometry, DodecahedronGeometry, EdgesGeometry, ExtrudeGeometry, IcosahedronGeometry, LatheGeometry, OctahedronGeometry, PlaneGeometry, PolyhedronGeometry, RingGeometry, ShapeGeometry, SphereGeometry, TetrahedronGeometry, TorusGeometry, TorusKnotGeometry, TubeGeometry, WireframeGeometry } from "three"
+import { BoxGeometry, CapsuleGeometry, CircleGeometry, ConeGeometry, 
+  CylinderGeometry, DodecahedronGeometry, EdgesGeometry, ExtrudeGeometry, 
+  IcosahedronGeometry, LatheGeometry, OctahedronGeometry, PlaneGeometry, 
+  PolyhedronGeometry, RingGeometry, ShapeGeometry, SphereGeometry, 
+  TetrahedronGeometry, TorusGeometry, TorusKnotGeometry, TubeGeometry, WireframeGeometry } from "three"
 
 export type Vector3D = { 
   x: number,

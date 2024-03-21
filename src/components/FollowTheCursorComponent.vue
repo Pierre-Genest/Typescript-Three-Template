@@ -7,7 +7,7 @@
 /*              IMPORTS                     */
 /********************************************/
 import { Ref, onMounted, onUnmounted, reactive, ref, toRaw, watch } from 'vue'
-import { Scene, PerspectiveCamera, WebGLRenderer, AxesHelper, Clock, SphereGeometry, Raycaster, Vector2 } from 'three'
+import { Scene, PerspectiveCamera, WebGLRenderer, AxesHelper, Clock, SphereGeometry, Raycaster, Vector2, Vector3, Quaternion } from 'three'
 import { Body, Sphere, World } from 'cannon-es'
 import { setupCamera, setupLight } from '../scripts/FollowTheCursorComponent' 
 import { cameraUpdate, createSurface, handleElem } from '../scripts/basicThree'
@@ -77,13 +77,20 @@ function displayAll (deltaTime: number) {
 
 function triggerPhysics () {
   for (let key in environment) {
-    if (environment[key].physic) {
-      environment[key].elem.position.copy(environment[key].physic.position)
-      environment[key].elem.quaternion.copy(environment[key].physic.quaternion)
-      if (environment[key].movement) environment[key].movement.position = { ...environment[key].elem.position }
+    const physic = environment[key].physic
+    if (physic) {
+      const position = new Vector3(physic.position.x, physic.position.y, physic.position.z)
+      const quaternion = new Quaternion(physic.quaternion.x, physic.quaternion.y, physic.quaternion.z)
+      const movement = environment[key].movement
+
+      environment[key].elem.position.copy(position)
+      environment[key].elem.quaternion.copy(quaternion)
+
+      if (movement) movement.position = { ...environment[key].elem.position }
     }
   }
 }
+
 
 function displayLights (deltaTime: number) {
   for (let light of toRaw(lights.value)) {

@@ -7,10 +7,10 @@
 /*              IMPORTS                     */
 /********************************************/
 import { Ref, onMounted, reactive, ref, toRaw, watch } from 'vue'
-import { Scene, PerspectiveCamera, WebGLRenderer, BoxGeometry, AxesHelper, Clock, Raycaster, Vector2, Intersection, Object3D, Object3DEventMap } from 'three'
+import { Scene, PerspectiveCamera, WebGLRenderer, BoxGeometry, AxesHelper, Clock, Raycaster, Vector2, Intersection, Object3D, Object3DEventMap, Vector3, Quaternion } from 'three'
 import { World, Box, Body, Vec3 } from 'cannon-es'
 import { setupCamera, setupLight } from '../scripts/surveyThreeComponent' 
-import { cameraUpdate, createSurface, handleElem, rotateMesh } from '../scripts/basicThree'
+import { cameraUpdate, createSurface, handleElem } from '../scripts/basicThree'
 import { Size2D } from '../ifaces/geometry.interface'
 import { CameraOptions, LightInfo, ObjInfo } from '../ifaces/basic.interface'
 
@@ -99,10 +99,16 @@ function displayAll (deltaTime: number) {
 
 function triggerPhysics () {
   for (let key in environment) {
-    if (environment[key].physic) {
-      environment[key].elem.position.copy(environment[key].physic.position)
-      environment[key].elem.quaternion.copy(environment[key].physic.quaternion)
-      if (environment[key].movement) environment[key].movement.position = { ...environment[key].elem.position }
+    const physic = environment[key].physic
+    if (physic) {
+      const position = new Vector3(physic.position.x, physic.position.y, physic.position.z)
+      const quaternion = new Quaternion(physic.quaternion.x, physic.quaternion.y, physic.quaternion.z)
+      const movement = environment[key].movement
+
+      environment[key].elem.position.copy(position)
+      environment[key].elem.quaternion.copy(quaternion)
+
+      if (movement) movement.position = { ...environment[key].elem.position }
     }
   }
 }

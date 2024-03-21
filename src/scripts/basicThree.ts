@@ -12,7 +12,7 @@ import { Body, Vec3 } from 'cannon-es'
 /**
  * 
  * @param name The name with wich you want to store the object in the scene
- * @param loader The loader needed to load your bject
+ * @param loader The loader needed to load your object
  * @param path The path to get your object
  * @param scene The scene in wich you want to add the object
  * 
@@ -74,7 +74,6 @@ export function loadObject (
 }
 
 /**
- * 
  * @param path the path to the image you want as a texture
  * @param onProgress (not necessary) a function that will be called to get the progress event 
  * @returns A Promise of the Texture
@@ -224,13 +223,14 @@ export function cameraUpdate (camera: PerspectiveCamera, fov: number, aspect: nu
   camera.updateProjectionMatrix()
 }
 
+/********************************************/
+/*             MOVEMENT FUNCTIONS             */
+/********************************************/
+
 /**
  * @param camera the camera that is going to be updated
- * @param fov 
- * @param aspect
- * @param near 
- * @param far 
- * Update the camera viewport
+ * @param deltaTime
+ * @param elem
  */
 export function handleElem (deltaTime: number, elem: LightInfo | CameraOptions | ObjInfo) {
   if (elem.movement) {
